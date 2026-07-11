@@ -1,0 +1,17 @@
+/* Core Animation Utilities for Fixora */
+.spring { 
+  transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #004ac6, #57dffe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -1,0 +1,4 @@
+/* Custom localized styles for the Hero section */
+.hero-glow {
+  background: radial-gradient(circle, rgba(0, 74, 198, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+}
