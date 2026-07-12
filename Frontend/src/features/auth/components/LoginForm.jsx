@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { inputBaseClass } from '../utils/inputStyles';
 
 const LoginForm = () => {
   const { login, isLoading } = useAuth();
@@ -17,7 +18,7 @@ const LoginForm = () => {
         <input 
           type="email" 
           required
-          className="w-full px-4 py-3.5 rounded-xl border border-black/[0.1] bg-surface-bright focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-[15px] transition-all" 
+          className={inputBaseClass}
           placeholder="name@example.com" 
           value={formData.email}
           onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -34,7 +35,7 @@ const LoginForm = () => {
         <input 
           type="password" 
           required
-          className="w-full px-4 py-3.5 rounded-xl border border-black/[0.1] bg-surface-bright focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-[15px] transition-all" 
+          className={inputBaseClass}
           placeholder="••••••••" 
           value={formData.password}
           onChange={(e) => setFormData({...formData, password: e.target.value})}

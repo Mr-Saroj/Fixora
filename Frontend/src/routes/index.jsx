@@ -24,7 +24,7 @@ export const router = createBrowserRouter([
     path: '/register',
     element: <Register />,
   },
-   {
+  {
     path: '/customer-dashboard',
     element: <DashboardLayout />,
   },
@@ -32,10 +32,4 @@ export const router = createBrowserRouter([
     path: '/technician-dashboard',
     element: <TechnicianDashboardLayout />,
   },
-  
-  // Future routes can easily be added here
-  // {
-  //   path: '/dashboard',
-  //   element: <Dashboard />,
-  // }
 ]);

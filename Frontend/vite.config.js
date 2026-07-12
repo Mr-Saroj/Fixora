@@ -7,10 +7,14 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    basicSsl(),
   ],
   server: {
-    https: true,
-    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })
