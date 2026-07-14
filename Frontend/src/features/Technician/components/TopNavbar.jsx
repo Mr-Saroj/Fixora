@@ -1,6 +1,19 @@
 import React from 'react';
+import { useAppSelector } from '../../../redux/hooks';
 
 const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
+  const user = useAppSelector((state) => state.auth.user);
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const firstName = user?.name?.split(' ')[0] || 'Guest';
+  const initials = getInitials(user?.name);
+
   return (
     <header className="sticky top-0 z-30 w-full h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100/80 flex items-center justify-between px-8">
       {/* Left: Hamburger + Greeting */}
@@ -16,7 +29,10 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
         </button>
 
         <div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">Welcome back, Marcus</h1>
+          {/* ✅ Dynamic name from Redux */}
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">
+            Welcome back, {firstName}
+          </h1>
           <p className="text-sm text-slate-400">You have 4 new customer requests waiting in your area.</p>
         </div>
       </div>
@@ -39,15 +55,12 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
           <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
 
-        {/* Status Toggle Button */}
-        <div className="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3.5 py-2 rounded-xl text-xs font-bold">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Online & Available
-        </div>
-
-        {/* Profile Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#004ac6] to-[#57dffe] flex items-center justify-center text-white font-bold text-sm shadow-md cursor-pointer hover:scale-105 transition-transform">
-          MJ
+        {/* ✅ Dynamic initials from Redux */}
+        <div
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-[#004ac6] to-[#57dffe] flex items-center justify-center text-white font-bold text-sm shadow-md cursor-pointer hover:scale-105 transition-transform"
+          title={user?.name || 'Guest'}
+        >
+          {initials}
         </div>
       </div>
     </header>

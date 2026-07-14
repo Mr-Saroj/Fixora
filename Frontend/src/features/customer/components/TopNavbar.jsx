@@ -1,6 +1,20 @@
 import React from 'react';
+import { useAppSelector } from '../../../redux/hooks';
 
 const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
+  const user = useAppSelector((state) => state.auth.user);
+
+  // Generate initials from name
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const firstName = user?.name?.split(' ')[0] || 'Guest';
+  const initials = getInitials(user?.name);
+
   return (
     <header className="sticky top-0 z-30 w-full h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100/80 flex items-center justify-between px-8">
       {/* Left: Hamburger + Greeting */}
@@ -16,7 +30,10 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
         </button>
 
         <div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">Welcome back, Alex</h1>
+          {/* ✅ Dynamic name from Redux */}
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">
+            Welcome back, {firstName}
+          </h1>
           <p className="text-sm text-slate-400">Here's what's happening with your home services today.</p>
         </div>
       </div>
@@ -45,9 +62,12 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
           <span className="hidden sm:inline">Book Service</span>
         </button>
 
-        {/* Profile Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#004ac6] to-[#57dffe] flex items-center justify-center text-white font-bold text-sm shadow-md cursor-pointer hover:scale-105 transition-transform">
-          AJ
+        {/* ✅ Dynamic initials from Redux */}
+        <div
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-[#004ac6] to-[#57dffe] flex items-center justify-center text-white font-bold text-sm shadow-md cursor-pointer hover:scale-105 transition-transform"
+          title={user?.name || 'Guest'}
+        >
+          {initials}
         </div>
       </div>
     </header>
