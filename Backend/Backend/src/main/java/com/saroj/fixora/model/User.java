@@ -1,6 +1,7 @@
 // 1. ADD THIS LINE: It must match your folder structure
 package com.saroj.fixora.model; 
 
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.annotation.Id; // 2. CHANGED: Use Spring Data's @Id, NOT jakarta.persistence.Id
 
@@ -13,6 +14,7 @@ public class User {
     @Id
     private String id;
     private String name;
+    @Indexed(unique = true)
     private String email;
     private String phone;
     private String password; // Plain text as requested

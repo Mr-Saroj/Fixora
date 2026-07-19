@@ -3,6 +3,7 @@ package com.saroj.fixora.web;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.saroj.fixora.dto.LoginRequest;
@@ -28,5 +29,10 @@ public class AuthController {
     public ResponseEntity<ApiResponse<?>> login(@RequestBody LoginRequest request) {
         ApiResponse<?> response = authService.loginUser(request);
         return ResponseEntity.ok(response); // 200 OK
+    }
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<?>> getCurrentUser(Authentication authentication) {
+        String email = authentication.getName(); // set by JwtAuthFilter
+        return ResponseEntity.ok(authService.getCurrentUser(email));
     }
 }

@@ -7,4 +7,5 @@ import com.saroj.fixora.response.ApiResponse;
 public interface AuthService {
     ApiResponse<?> registerUser(RegisterRequest request);
     ApiResponse<?> loginUser(LoginRequest request); 
+    ApiResponse<?> getCurrentUser(String email);
 }

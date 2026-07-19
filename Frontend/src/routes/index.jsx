@@ -1,35 +1,48 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-import Home from '../features/home/Home';
-import Login from '../features/auth/pages/Login';
-import Register from '../features/auth/pages/Register';
-import DashboardLayout from '../features/customer/components/DashboardLayout';
-import TechnicianDashboardLayout from '../features/Technician/components/TechnicianDashboardLayout';
 
+// 🔄 Lazy-loaded pages — each becomes its own separate JS chunk
+const Home = lazy(() => import('../features/home/Home'));
+const Login = lazy(() => import('../features/auth/pages/Login'));
+const Register = lazy(() => import('../features/auth/pages/Register'));
+const DashboardLayout = lazy(() => import('../features/customer/components/DashboardLayout'));
+const TechnicianDashboardLayout = lazy(() => import('../features/Technician/components/TechnicianDashboardLayout'));
 
+// Simple loading spinner shown while a page chunk downloads
+const PageLoader = () => (
+  <div className="w-screen h-screen flex items-center justify-center">
+    <span className="material-symbols-outlined animate-spin text-4xl text-primary">
+      progress_activity
+    </span>
+  </div>
+);
 
-// Import your pages
-
+// Wraps each lazy page with a Suspense boundary
+const withSuspense = (Component) => (
+  <Suspense fallback={<PageLoader />}>
+    <Component />
+  </Suspense>
+);
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Home />,
+    element: withSuspense(Home),
   },
   {
     path: '/login',
-    element: <Login />,
+    element: withSuspense(Login),
   },
   {
     path: '/register',
-    element: <Register />,
+    element: withSuspense(Register),
   },
   {
     path: '/customer-dashboard',
-    element: <DashboardLayout />,
+    element: withSuspense(DashboardLayout),
   },
   {
     path: '/technician-dashboard',
-    element: <TechnicianDashboardLayout />,
+    element: withSuspense(TechnicianDashboardLayout),
   },
 ]);

@@ -1,8 +1,10 @@
 package com.saroj.fixora.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.saroj.fixora.dto.AuthResponse;
 import com.saroj.fixora.dto.LoginRequest;
 import com.saroj.fixora.dto.RegisterRequest;
 import com.saroj.fixora.dto.UserResponse;
@@ -13,6 +15,7 @@ import com.saroj.fixora.model.enums.Role;
 import com.saroj.fixora.model.enums.TechnicianType;
 import com.saroj.fixora.repository.UserRepository;
 import com.saroj.fixora.response.ApiResponse;
+import com.saroj.fixora.security.JwtUtil;
 import com.saroj.fixora.service.AuthService;
 
 @Service
@@ -20,6 +23,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     public ApiResponse<?> registerUser(RegisterRequest request) {
@@ -31,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
-        user.setPassword(request.getPassword()); 
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.valueOf(request.getRole().toUpperCase()));
 
         if (user.getRole() == Role.TECHNICIAN && request.getTechnicianType() != null) {
@@ -46,18 +55,27 @@ public class AuthServiceImpl implements AuthService {
         return new ApiResponse<>(true, "Registration successful!", savedUser.getId());
     }
 
-    // ADD THIS ENTIRE METHOD:
     @Override
     public ApiResponse<?> loginUser(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new ResourceNotFoundException("Invalid password!");
         }
 
-        // ✅ Wrap in UserResponse — excludes password and class
+        // 🔑 Generate JWT
+        String token = jwtUtil.generateToken(user.getEmail());
         UserResponse userResponse = new UserResponse(user);
-        return new ApiResponse<>(true, "Login successful!", userResponse);
+        AuthResponse authResponse = new AuthResponse(token, userResponse);
+
+        return new ApiResponse<>(true, "Login successful!", authResponse);
+    }
+
+    @Override
+    public ApiResponse<?> getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return new ApiResponse<>(true, "User fetched successfully!", new UserResponse(user));
     }
 }
