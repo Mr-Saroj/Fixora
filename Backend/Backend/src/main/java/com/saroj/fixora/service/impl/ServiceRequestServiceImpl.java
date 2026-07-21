@@ -68,11 +68,16 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     }
 
     @Override
-    public ApiResponse<?> getMyRequests(String customerEmail) {
-        User customer = userRepository.findByEmail(customerEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+    public ApiResponse<?> getMyRequests(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<ServiceRequest> requests = requestRepository.findByCustomerId(customer.getId());
-        return new ApiResponse<>(true, "Your requests fetched successfully!", requests);
+        List<ServiceRequest> requests = requestRepository.findByCustomerId(user.getId());
+
+        if (requests.isEmpty()) {
+            return new ApiResponse<>(false, "No service requests found", null);
+        }
+
+        return new ApiResponse<>(true, "Requests fetched successfully", requests);
     }
 }

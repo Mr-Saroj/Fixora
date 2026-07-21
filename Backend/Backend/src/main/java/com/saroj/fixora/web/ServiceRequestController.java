@@ -32,9 +32,10 @@ public class ServiceRequestController {
     }
 
     // Customer sees their own submitted requests
-    @GetMapping("/my")
+ // Customer sees their own submitted requests
+    @GetMapping("/my-requests")
     public ResponseEntity<ApiResponse<?>> getMyRequests(Authentication authentication) {
-        String email = authentication.getName();
+        String email = authentication.getName();  // from JwtAuthFilter
         return ResponseEntity.ok(requestService.getMyRequests(email));
     }
 }

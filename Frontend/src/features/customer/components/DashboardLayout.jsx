@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
 import MiddleContent from './MiddleContent';
 import Request from '../pages/Request';   // ← updated path
+import RequestHistory from '../pages/RequestHistory';
 
 // --- Placeholder Components for future pages ---
 const PlaceholderPage = ({ title, icon }) => (
@@ -26,6 +27,8 @@ const DashboardLayout = () => {
     switch (activePage) {
       case 'requests':
         return <Request />;
+      case 'history':                  // <-- ADD THIS CASE
+        return <RequestHistory />;     // <-- ADD THIS CASE
       case 'earnings':
         return <PlaceholderPage title="Earnings" icon="payments" />;
       case 'messages':
@@ -49,9 +52,8 @@ const DashboardLayout = () => {
 
       {/* Main Area — margin shifts with sidebar */}
       <div
-        className={`flex-1 flex flex-col relative transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          sidebarOpen ? 'lg:ml-72' : 'lg:ml-0'
-        }`}
+        className={`flex-1 flex flex-col relative transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${sidebarOpen ? 'lg:ml-72' : 'lg:ml-0'
+          }`}
       >
         {/* TopNavbar with toggle button */}
         <TopNavbar

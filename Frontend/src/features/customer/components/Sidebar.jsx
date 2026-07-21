@@ -4,6 +4,8 @@ const Sidebar = ({ activePage, setActivePage, sidebarOpen, setSidebarOpen }) => 
   const navLinks = [
     { icon: 'dashboard', label: 'Dashboard' },
     { icon: 'assignment', label: 'Create Requests' },
+    // 👇 ADDED THIS LINE HERE 👇
+    { icon: 'history', label: 'Request History' }, 
     { icon: 'chat_bubble', label: 'Messages' },
     { icon: 'settings', label: 'Settings' },
   ];
@@ -17,6 +19,7 @@ const Sidebar = ({ activePage, setActivePage, sidebarOpen, setSidebarOpen }) => 
     const map = {
       'Dashboard': 'dashboard',
       'Create Requests': 'requests',
+      'Request History': 'history', // This was correct in your code!
       'Messages': 'messages',
       'Settings': 'settings',
     };
