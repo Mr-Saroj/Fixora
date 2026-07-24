@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { getMatchingRequests } from '../services/technicianService';
+import { getMatchingRequests, acceptRequest } from '../services/technicianService';
 
 export const useCustomerRequests = () => {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -61,21 +61,33 @@ export const useCustomerRequests = () => {
   const emergencyCount = requests.filter((r) => r.urgency?.toLowerCase() === 'emergency').length;
   const standardCount = requests.filter((r) => r.urgency?.toLowerCase() === 'standard').length;
 
-  // ── Accept / Decline (local remove for now — wired to API later) ──
-  const handleAccept = (id) => {
-    // TODO: call PATCH /api/technician/requests/:id/accept
-    setRequests((prev) => prev.filter((req) => req.id !== id));
-    setSelectedRequest(null);
-  };
+  // ── Accept ─────────────────────────────────────────────────
+  const handleAccept = async (id) => {
+  try {
+    const response = await acceptRequest(id);
+    if (response.data.success) {
+      setRequests((prev) => prev.filter((req) => req.id !== id));
+      setSelectedRequest(null);
+    } else {
+      alert(response.data.message);
+    }
+  } catch (err) {
+    // TEMPORARY DEBUG - shows exact error
+    console.log('Status:', err.response?.status);
+    console.log('Response:', err.response?.data);
+    console.log('Message:', err.message);
+    const msg = err.response?.data?.message || 'Failed to accept request.';
+    alert(msg);
+  }
+};
 
+  // ── Decline ────────────────────────────────────────────────
   const handleDecline = (id) => {
-    // TODO: call PATCH /api/technician/requests/:id/decline
     setRequests((prev) => prev.filter((req) => req.id !== id));
     setSelectedRequest(null);
   };
 
   return {
-    // state
     activeFilter,
     searchQuery,
     sortBy,
@@ -86,12 +98,10 @@ export const useCustomerRequests = () => {
     totalCount,
     emergencyCount,
     standardCount,
-    // setters
     setActiveFilter,
     setSearchQuery,
     setSortBy,
     setSelectedRequest,
-    // actions
     handleAccept,
     handleDecline,
   };

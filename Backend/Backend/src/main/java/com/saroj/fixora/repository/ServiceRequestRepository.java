@@ -13,4 +13,5 @@ public interface ServiceRequestRepository extends MongoRepository<ServiceRequest
     List<ServiceRequest> findByCategoryAndStatus(TechnicianType category, RequestStatus status);
 
     List<ServiceRequest> findByCustomerId(String customerId);
+    List<ServiceRequest> findByAssignedTechnicianId(String assignedTechnicianId);
 }
