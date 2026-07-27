@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser, loginUser, getCurrentUser } from '../services/authService';
+import { registerUser, loginUser, getCurrentUser, sendForgotPasswordOtp, resetPassword } from '../services/authService';
 
 import { useAppDispatch } from "../../../redux/hooks";
 import { loginSuccess, logout } from "../../../redux/slices/authSlice";
@@ -89,6 +89,38 @@ export const useAuth = () => {
       dispatch(logout());
     }
   };
+  const forgotPassword = async (email, onSuccess) => {
+    setIsLoading(true);
+    try {
+      const res = await sendForgotPasswordOtp(email);
+      if (res.data.success) {
+        onSuccess(email);
+      } else {
+        alert(res.data.message || 'Failed to send OTP.');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'No account found with this email.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+ 
+  const resetUserPassword = async (email, otp, newPassword) => {
+    setIsLoading(true);
+    try {
+      const res = await resetPassword(email, otp, newPassword);
+      if (res.data.success) {
+        alert('Password reset successfully! Please log in.');
+        navigate('/login');
+      } else {
+        alert(res.data.message || 'Failed to reset password.');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Reset failed. OTP may have expired.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  return { login, register, loadUserFromToken, isLoading };
+  return { login, register, loadUserFromToken, isLoading, forgotPassword, resetUserPassword };
 };

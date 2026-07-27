@@ -10,7 +10,7 @@ const AuthLayout = ({ children, title, subtitle }) => {
     <div className="flex flex-col min-h-screen bg-background relative overflow-x-hidden z-0">
 
       {/* Global Top Navigation */}
-      <Navbar />
+      {/* <Navbar /> */}
 
       {/* Ambient Background Glows (Fixed to stay behind content) */}
       <div className="fixed top-[10%] left-[15%] w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px] -z-10 animate-pulse pointer-events-none"></div>
@@ -40,7 +40,7 @@ const AuthLayout = ({ children, title, subtitle }) => {
       </main>
 
       {/* Global Bottom Footer */}
-      <Footer />
+      {/* <Footer /> */}
 
     </div>
   );

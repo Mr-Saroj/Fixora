@@ -11,6 +11,11 @@ const MiddleContent = () => {
     currentJob,
     recentActivity,
     stats,
+    locationStatus,
+    locationError,
+    locationAccuracy,
+    canShareLocation,
+    handleShareLocation,
   } = useDashboardData();
 
   return (
@@ -76,30 +81,65 @@ const MiddleContent = () => {
                   <p className="text-xs text-slate-400 mt-1">Post a new request to get matched with a technician.</p>
                 </div>
               ) : currentJob.technician ? (
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#004ac6] to-[#57dffe] flex items-center justify-center text-white font-bold text-xl">
-                      {currentJob.technician.name?.charAt(0).toUpperCase()}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#004ac6] to-[#57dffe] flex items-center justify-center text-white font-bold text-xl">
+                        {currentJob.technician.name?.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
                     </div>
-                    <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-slate-800 text-sm">{currentJob.technician.name}</h4>
+                      <p className="text-xs text-slate-500 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px] text-[#004ac6]">
+                          {getCategoryIcon(currentJob.category)}
+                        </span>
+                        {currentJob.technician.technicianType} • {currentJob.technician.city}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={`tel:${currentJob.technician.phone}`}
+                        className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[#004ac6] hover:bg-[#004ac6] hover:text-white hover:border-[#004ac6] transition-all duration-200 shadow-sm"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">call</span>
+                      </a>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-slate-800 text-sm">{currentJob.technician.name}</h4>
-                    <p className="text-xs text-slate-500 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px] text-[#004ac6]">
-                        {getCategoryIcon(currentJob.category)}
-                      </span>
-                      {currentJob.technician.technicianType} • {currentJob.technician.city}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <a
-                      href={`tel:${currentJob.technician.phone}`}
-                      className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[#004ac6] hover:bg-[#004ac6] hover:text-white hover:border-[#004ac6] transition-all duration-200 shadow-sm"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">call</span>
-                    </a>
-                  </div>
+
+                  {/* ── Share Live Location ── */}
+                  {canShareLocation && (
+                    <div className="pt-4 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={handleShareLocation}
+                        disabled={locationStatus === 'sharing'}
+                        className={`w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200
+                          ${locationStatus === 'shared'
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            : 'bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm hover:shadow-md disabled:opacity-60'}`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {locationStatus === 'shared' ? 'check_circle' : 'my_location'}
+                        </span>
+                        {locationStatus === 'sharing'
+                          ? 'Getting your precise location…'
+                          : locationStatus === 'shared'
+                          ? 'Opened in WhatsApp'
+                          : 'Share Your Live Location'}
+                      </button>
+                      {locationStatus === 'error' && (
+                        <p className="text-xs text-red-500 mt-2 text-center">{locationError}</p>
+                      )}
+                      {locationStatus === 'shared' && (
+                        <p className="text-xs text-slate-400 mt-2 text-center">
+                          Send the WhatsApp message to share your live location with {currentJob.technician.name}.
+                          {locationAccuracy != null && ` (accurate to ~${Math.round(locationAccuracy)}m)`}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-10">

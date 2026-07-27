@@ -36,7 +36,8 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-            	    .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+            	    .requestMatchers("/api/auth/register", "/api/auth/login","/api/auth/forgot-password",   // ← add
+            	    	    "/api/auth/reset-password").permitAll()
             	    .anyRequest().authenticated()   // ⬅ change from permitAll() to authenticated()
             	)
             .httpBasic(basic -> basic.disable())

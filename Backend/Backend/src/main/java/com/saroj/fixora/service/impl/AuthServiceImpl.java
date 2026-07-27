@@ -1,12 +1,16 @@
 package com.saroj.fixora.service.impl;
 
+import java.util.Random;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.saroj.fixora.dto.AuthResponse;
+import com.saroj.fixora.dto.ForgotPasswordRequest;
 import com.saroj.fixora.dto.LoginRequest;
 import com.saroj.fixora.dto.RegisterRequest;
+import com.saroj.fixora.dto.ResetPasswordRequest;
 import com.saroj.fixora.dto.UserResponse;
 import com.saroj.fixora.exception.DuplicateResourceException;
 import com.saroj.fixora.exception.ResourceNotFoundException;
@@ -16,7 +20,9 @@ import com.saroj.fixora.model.enums.TechnicianType;
 import com.saroj.fixora.repository.UserRepository;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.security.JwtUtil;
+import com.saroj.fixora.security.OtpStore;
 import com.saroj.fixora.service.AuthService;
+import com.saroj.fixora.service.EmailService;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -26,6 +32,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private OtpStore otpStore;
+     
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -77,5 +89,37 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return new ApiResponse<>(true, "User fetched successfully!", new UserResponse(user));
+    }
+    
+    @Override
+    public ApiResponse<?> sendForgotPasswordOtp(ForgotPasswordRequest request) {
+        // Verify user exists (don't reveal if they don't — security best practice)
+        userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("No account found with that email."));
+     
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+     
+        otpStore.save(request.getEmail(), otp);
+        emailService.sendOtp(request.getEmail(), otp);
+     
+        return new ApiResponse<>(true, "OTP sent to your registered email.", null);
+    }
+     
+    @Override
+    public ApiResponse<?> resetPassword(ResetPasswordRequest request) {
+        if (!otpStore.verify(request.getEmail(), request.getOtp())) {
+            throw new ResourceNotFoundException("Invalid or expired OTP.");
+        }
+     
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+     
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+     
+        otpStore.remove(request.getEmail()); // Invalidate OTP after use
+     
+        return new ApiResponse<>(true, "Password reset successfully! Please log in.", null);
     }
 }

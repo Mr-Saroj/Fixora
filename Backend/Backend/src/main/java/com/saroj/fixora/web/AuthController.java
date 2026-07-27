@@ -6,8 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.saroj.fixora.dto.ForgotPasswordRequest;
 import com.saroj.fixora.dto.LoginRequest;
 import com.saroj.fixora.dto.RegisterRequest;
+import com.saroj.fixora.dto.ResetPasswordRequest;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.service.AuthService;
 
@@ -34,5 +36,16 @@ public class AuthController {
     public ResponseEntity<ApiResponse<?>> getCurrentUser(Authentication authentication) {
         String email = authentication.getName(); // set by JwtAuthFilter
         return ResponseEntity.ok(authService.getCurrentUser(email));
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<?>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        ApiResponse<?> response = authService.sendForgotPasswordOtp(request);
+        return ResponseEntity.ok(response);
+    }
+     
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<?>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        ApiResponse<?> response = authService.resetPassword(request);
+        return ResponseEntity.ok(response);
     }
 }

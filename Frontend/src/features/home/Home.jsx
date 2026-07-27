@@ -34,7 +34,7 @@ const Home = () => {
       <Particles />
 
       {/* Top Navigation Bar */}
-      <Navbar />
+      {/* <Navbar /> */}
 
       {/* Render Feature Sections */}
       <main>
@@ -52,7 +52,7 @@ const Home = () => {
       </main>
 
       {/* Bottom Footer */}
-      <Footer />
+      {/* <Footer /> */}
 
     </div>
   );
