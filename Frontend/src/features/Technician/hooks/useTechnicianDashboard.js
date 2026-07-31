@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getMyJobs, updateJobStatus } from '../services/technicianService';
+import { getMyJobs, updateJobStatus, getSubscriptionStatus } from '../services/technicianService';
 
-// ── Constants & Utilities ──────────────────────────────────
 export const STEPS = [
   { status: 'ACCEPTED', icon: 'assignment_turned_in', label: 'Accepted' },
   { status: 'IN_PROGRESS', icon: 'engineering', label: 'In Progress' },
@@ -15,20 +14,20 @@ export const getCategoryIcon = (category) => {
 
 export const formatDate = (iso) => {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString(undefined, { 
-    month: 'short', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 };
 
-// ── Hook Logic ─────────────────────────────────────────────
 export const useTechnicianDashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [advancing, setAdvancing] = useState(false);
   const [error, setError] = useState(null);
+
+  // ── Subscription state ──────────────────────────────────
+  const [subscription, setSubscription] = useState(null); // { status, daysRemaining, subscriptionEndDate }
+  const [subLoading, setSubLoading] = useState(true);
 
   // ── Fetch Jobs ──────────────────────────────────────────
   const fetchJobs = useCallback(async () => {
@@ -44,50 +43,64 @@ export const useTechnicianDashboard = () => {
     }
   }, []);
 
+  // ── Fetch Subscription ──────────────────────────────────
+  const fetchSubscription = useCallback(async () => {
+    setSubLoading(true);
+    try {
+      const res = await getSubscriptionStatus();
+      setSubscription(res.data.data); // { status, daysRemaining, subscriptionEndDate }
+    } catch (err) {
+      setSubscription(null);
+    } finally {
+      setSubLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchJobs();
-  }, [fetchJobs]);
+    fetchSubscription();
+  }, [fetchJobs, fetchSubscription]);
 
   // ── Derived Data ────────────────────────────────────────
-  const activeJobs = useMemo(() => 
-    jobs.filter((j) => j.status === 'ACCEPTED' || j.status === 'IN_PROGRESS'), 
+  const activeJobs = useMemo(() =>
+    jobs.filter((j) => j.status === 'ACCEPTED' || j.status === 'IN_PROGRESS'),
   [jobs]);
 
-  const completedJobs = useMemo(() => 
-    jobs.filter((j) => j.status === 'COMPLETED'), 
+  const completedJobs = useMemo(() =>
+    jobs.filter((j) => j.status === 'COMPLETED'),
   [jobs]);
 
-  // The job currently being worked — most recently touched active job
   const currentJob = useMemo(() => {
     return [...activeJobs].sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     )[0];
   }, [activeJobs]);
 
-  const currentStepIdx = currentJob ? STEPS.findIndex((s) => s.status === currentJob.status) : -1;
+  const currentStepIdx = currentJob
+    ? STEPS.findIndex((s) => s.status === currentJob.status)
+    : -1;
 
   const stats = useMemo(() => [
-    { 
-      icon: 'engineering', 
-      label: 'Active Jobs', 
-      value: String(activeJobs.length).padStart(2, '0'), 
-      sub: `${activeJobs.filter(j => j.status === 'IN_PROGRESS').length} IN PROGRESS`, 
-      color: 'blue' 
+    {
+      icon: 'engineering',
+      label: 'Active Jobs',
+      value: String(activeJobs.length).padStart(2, '0'),
+      sub: `${activeJobs.filter(j => j.status === 'IN_PROGRESS').length} IN PROGRESS`,
+      color: 'blue'
     },
-    { 
-      icon: 'verified', 
-      label: 'Completed Jobs', 
-      value: String(completedJobs.length).padStart(2, '0'), 
-      sub: 'ALL TIME', 
-      color: 'emerald' 
+    {
+      icon: 'verified',
+      label: 'Completed Jobs',
+      value: String(completedJobs.length).padStart(2, '0'),
+      sub: 'ALL TIME',
+      color: 'emerald'
     },
-    // Kept exactly as-is per request — no real backend aggregate for technician rating yet
-    { 
-      icon: 'star', 
-      label: 'My Tech Rating', 
-      value: '4.95/5.0', 
-      sub: 'TOP RATED PRO', 
-      color: 'amber' 
+    {
+      icon: 'star',
+      label: 'My Tech Rating',
+      value: '4.95/5.0',
+      sub: 'TOP RATED PRO',
+      color: 'amber'
     },
   ], [activeJobs, completedJobs]);
 
@@ -102,10 +115,7 @@ export const useTechnicianDashboard = () => {
     try {
       const res = await updateJobStatus(currentJob.id, nextStatus);
       const body = res.data;
-      if (!body.success) {
-        alert(body.message || 'Could not update status');
-        return;
-      }
+      if (!body.success) { alert(body.message || 'Could not update status'); return; }
       setJobs((prev) => prev.map((j) => (j.id === currentJob.id ? { ...j, status: nextStatus } : j)));
     } catch (err) {
       alert(err?.response?.data?.message || 'Could not update status');
@@ -115,19 +125,10 @@ export const useTechnicianDashboard = () => {
   };
 
   return {
-    // State & Loading
-    jobsLoading,
-    error,
-    advancing,
-    
-    // Actions
-    fetchJobs,
-    advanceCurrentJob,
-    
-    // Derived Data
-    currentJob,
-    currentStepIdx,
-    stats,
-    completedJobs,
+    jobsLoading, error, advancing,
+    fetchJobs, advanceCurrentJob,
+    currentJob, currentStepIdx, stats, completedJobs,
+    subscription, subLoading, // ✅ new
+    fetchSubscription,
   };
 };

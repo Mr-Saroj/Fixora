@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTechnicianDashboard, STEPS, getCategoryIcon, formatDate } from '../hooks/useTechnicianDashboard';
+import SubscriptionCard from './SubscriptionCard';
 
 const MiddleContent = () => {
   const {
@@ -12,10 +13,17 @@ const MiddleContent = () => {
     currentStepIdx,
     stats,
     completedJobs,
+    subscription, subLoading,
+    fetchSubscription,
   } = useTechnicianDashboard();
 
   return (
     <main className="flex-1 p-8 overflow-y-auto bg-[#f8fafc]">
+      <SubscriptionCard
+        subscription={subscription}
+        subLoading={subLoading}
+        onPaymentSuccess={fetchSubscription} // ✅ after payment, card auto-refreshes
+      />
       {/* Stats Grid */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {stats.map((stat, i) => (

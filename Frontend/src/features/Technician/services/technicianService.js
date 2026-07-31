@@ -11,3 +11,5 @@ export const getMyJobs = () => API.get('/requests/my-jobs');
 // NEW — advance job status. status must be "IN_PROGRESS" or "COMPLETED"
 export const updateJobStatus = (id, status) =>
   API.patch(`/requests/${id}/status`, { status });
+
+export const getSubscriptionStatus = () => API.get('/payment/subscription-status');
