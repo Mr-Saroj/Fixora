@@ -1,31 +1,33 @@
-// 1. ADD THIS LINE: It must match your folder structure
-package com.saroj.fixora.model; 
+package com.saroj.fixora.model;
 
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.annotation.Id; // 2. CHANGED: Use Spring Data's @Id, NOT jakarta.persistence.Id
+import org.springframework.data.annotation.Id;
 
 import com.saroj.fixora.model.enums.Role;
 import com.saroj.fixora.model.enums.TechnicianType;
 
+import java.time.LocalDate;
+
 @Document(collection = "users")
 public class User {
-    
+
     @Id
     private String id;
     private String name;
     @Indexed(unique = true)
     private String email;
     private String phone;
-    private String password; // Plain text as requested
+    private String password;
     private Role role;
-    
+
     // Technician specific fields
     private TechnicianType technicianType;
     private String state;
     private String district;
     private String city;
     private String pinCode;
+    private LocalDate subscriptionEndDate; // ✅ NEW FIELD
 
     // Default Constructor required by MongoDB
     public User() {}
@@ -63,4 +65,14 @@ public class User {
 
     public String getPinCode() { return pinCode; }
     public void setPinCode(String pinCode) { this.pinCode = pinCode; }
+
+    // ✅ NEW: Getter and Setter for subscriptionEndDate
+    public LocalDate getSubscriptionEndDate() { return subscriptionEndDate; }
+    public void setSubscriptionEndDate(LocalDate subscriptionEndDate) { this.subscriptionEndDate = subscriptionEndDate; }
+
+    // ✅ OPTIONAL HELPER: Check if technician subscription is still active
+    public boolean isSubscriptionActive() {
+        if (subscriptionEndDate == null) return false;
+        return !LocalDate.now().isAfter(subscriptionEndDate);
+    }
 }

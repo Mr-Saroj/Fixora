@@ -1,23 +1,42 @@
 export const pricingData = [
   {
-    title: 'Starter',
-    price: '29',
-    desc: 'Great for solo technicians.',
-    features: ['Verified Tech Badge', 'Standard Leads', 'Basic Dashboard Support', '24/7 Email Support'],
+    title: "Customer",
+    price: "0",
+    desc: "Book home services completely free.",
+    features: [
+      "Create Unlimited Service Requests",
+      "Track Service Status",
+      "Email OTP Password Recovery",
+      "Upload Service Images",
+      "Rate & Review Technicians"
+    ],
     popular: false
   },
   {
-    title: 'Professional',
-    price: '79',
-    desc: 'Best for growing service teams.',
-    features: ['Priority Matching', 'Live Dashboard', '5% Commission', 'Instant Payouts', 'Dedicated Manager'],
+    title: "Technician Pro",
+    price: "399",
+    desc: "Monthly subscription to receive and manage service requests.",
+    features: [
+      "View Service Requests",
+      "Accept Jobs in Your City",
+      "Manage Job Status",
+      "Customer Feedback & Ratings",
+      "Secure Razorpay Subscription",
+      "Professional Dashboard"
+    ],
     popular: true
   },
   {
-    title: 'Enterprise',
-    price: '199',
-    desc: 'For multi-city service agencies.',
-    features: ['Multi-Tech ERP', '0% Commission', 'Dedicated Account Manager', 'Custom API Access', 'Custom SLA'],
+    title: "Enterprise",
+    price: "Custom",
+    desc: "For organizations and service providers with multiple technicians.",
+    features: [
+      "Multi-Technician Management",
+      "Dedicated Support",
+      "Custom Business Solutions",
+      "Priority Onboarding",
+      "Scalable Service Platform"
+    ],
     popular: false,
     contact: true
   }

@@ -16,7 +16,10 @@ import com.saroj.fixora.service.ServiceRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +100,29 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     public ApiResponse<?> acceptRequest(String requestId, String technicianEmail) {
         User technician = userRepository.findByEmail(technicianEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
+
+        // ── Subscription check ──────────────────────────────────────────────
+        // MongoDB stores subscriptionEndDate as full datetime (e.g. 2026-08-28T18:30:00.000+00:00)
+        // Spring deserializes it into LocalDate as the UTC date portion (2026-08-28)
+        // We compare against today's date in UTC to stay consistent
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+
+        if (technician.getSubscriptionEndDate() == null) {
+            return new ApiResponse<>(false,
+                    "No active subscription found. Please claim a subscription plan to accept service requests.",
+                    null);
+        }
+
+        if (!technician.getSubscriptionEndDate().isAfter(today)) {
+            // isAfter(today) == false  →  endDate <= today  →  expired or expiring today
+            String expiredOn = technician.getSubscriptionEndDate()
+                    .format(DateTimeFormatter.ofPattern("MMM dd, yyyy"));
+            return new ApiResponse<>(false,
+                    "Your subscription expired on " + expiredOn +
+                    ". Please renew your plan to accept service requests.",
+                    null);
+        }
+        // ───────────────────────────────────────────────────────────────────
 
         ServiceRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
@@ -189,9 +215,6 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         return new ApiResponse<>(true, "Job status updated to " + newStatus, null);
     }
 
-    // ============================================================
-    // 🔑 NEW — customer rates the technician for a completed job
-    // ============================================================
     @Override
     public ApiResponse<?> rateTechnician(String requestId, String customerEmail, RatingRequest dto) {
         User customer = userRepository.findByEmail(customerEmail)
