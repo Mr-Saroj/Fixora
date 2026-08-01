@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTechnicianJobs } from '../hooks/useTechnicianJobs';
 
 // ── Mini Stepper Sub-component ─────────────────────────
 const MiniStepper = ({ currentStep, status, steps }) => {
   if (status === 'completed') return null;
   return (
-    <div className="flex items-center gap-1 mt-3">
+    <div className="flex items-center gap-1 sm:gap-1.5 mt-3">
       {steps.map((step, i) => (
         <React.Fragment key={i}>
           <div className="flex flex-col items-center">
             <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all
+              className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-all
               ${
                 i < currentStep
                   ? 'bg-[#004ac6] text-white'
@@ -35,7 +35,7 @@ const MiniStepper = ({ currentStep, status, steps }) => {
 const JobDetailModal = ({ hook }) => {
   const {
     jobs, selectedJob, setSelectedJob, showCompleteConfirm, setShowCompleteConfirm,
-    updatingId, advanceJob, getCategoryColor, getCategoryIcon, getStatusConfig, 
+    updatingId, advanceJob, getCategoryColor, getCategoryIcon, getStatusConfig,
     formatDate, steps
   } = hook;
 
@@ -48,52 +48,59 @@ const JobDetailModal = ({ hook }) => {
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] animate-[fadeIn_0.2s_ease]"
         onClick={() => { setSelectedJob(null); setShowCompleteConfirm(null); }}
       />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4 pointer-events-none">
         <div
-          className="bg-white rounded-3xl shadow-[0_25px_80px_-20px_rgba(0,0,0,0.3)] w-full max-w-2xl max-h-[90vh] overflow-y-auto pointer-events-auto"
+          className="bg-white sm:rounded-3xl rounded-t-3xl shadow-[0_25px_80px_-20px_rgba(0,0,0,0.3)] w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto pointer-events-auto animate-[slideUp_0.3s_ease]"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 bg-white/90 backdrop-blur-xl p-6 pb-4 border-b border-slate-100 rounded-t-3xl z-10">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-14 h-14 rounded-2xl ${catColor.bg} ${catColor.text} ${catColor.border} border flex items-center justify-center`}>
-                  <span className="material-symbols-outlined text-[28px]">{getCategoryIcon(job.category)}</span>
+          <div className="sm:hidden flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-slate-200" />
+          </div>
+
+          {/* Modal Header */}
+          <div className="sticky top-0 bg-white/90 backdrop-blur-xl p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 sm:rounded-t-3xl z-10">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${catColor.bg} ${catColor.text} ${catColor.border} border flex items-center justify-center shrink-0`}>
+                  <span className="material-symbols-outlined text-[22px] sm:text-[28px]">{getCategoryIcon(job.category)}</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${catColor.bg} ${catColor.text} ${catColor.border} border`}>{job.category}</span>
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} border flex items-center gap-1`}>
-                      <span className="material-symbols-outlined text-[12px]">{statusConfig.icon}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-md ${catColor.bg} ${catColor.text} ${catColor.border} border`}>{job.category}</span>
+                    <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-md ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} border flex items-center gap-1`}>
+                      <span className="material-symbols-outlined text-[11px] sm:text-[12px]">{statusConfig.icon}</span>
                       {statusConfig.label}
                     </span>
                     {job.urgency === 'Emergency' && (
-                      <span className="text-[10px] font-extrabold uppercase bg-red-500 text-white px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span className="text-[9px] sm:text-[10px] font-extrabold uppercase bg-red-500 text-white px-2 py-0.5 rounded-md flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                         Emergency
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">{job.id} • Requested {formatDate(job.createdAt)}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 mt-1 truncate">{job.id} • Requested {formatDate(job.createdAt)}</p>
                 </div>
               </div>
-              <button onClick={() => { setSelectedJob(null); setShowCompleteConfirm(null); }} className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
-                <span className="material-symbols-outlined text-[22px]">close</span>
+              <button onClick={() => { setSelectedJob(null); setShowCompleteConfirm(null); }} className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all shrink-0">
+                <span className="material-symbols-outlined text-[20px] sm:text-[22px]">close</span>
               </button>
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
-            <h2 className="text-lg font-bold text-slate-800 leading-snug">{job.issue}</h2>
+          {/* Modal Body */}
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 leading-snug">{job.issue}</h2>
 
+            {/* Progress Section */}
             {job.status !== 'completed' && (
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-100">
+                <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px] text-slate-400">route</span>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Job Progress</span>
+                    <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-slate-400">route</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">Job Progress</span>
                   </div>
                   <button
                     onClick={() => {
@@ -101,7 +108,7 @@ const JobDetailModal = ({ hook }) => {
                       else advanceJob(job.id);
                     }}
                     disabled={job.currentStep >= 2 || isUpdating}
-                    className="px-4 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm hover:shadow-md disabled:opacity-30 disabled:pointer-events-none transition-all"
+                    className="px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm hover:shadow-md disabled:opacity-30 disabled:pointer-events-none transition-all whitespace-nowrap"
                   >
                     {isUpdating ? 'Updating…' : job.currentStep === 1 ? 'Mark Complete' : 'Start Job'}
                   </button>
@@ -115,26 +122,26 @@ const JobDetailModal = ({ hook }) => {
                     const isDone = i < job.currentStep;
                     const isActive = i === job.currentStep;
                     return (
-                      <div key={i} className="relative z-10 flex flex-col items-center text-center w-16">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300 shadow-md
+                      <div key={i} className="relative z-10 flex flex-col items-center text-center w-14 sm:w-16">
+                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300 shadow-md
                           ${isActive ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 ring-4 ring-[#004ac6]/10' : isDone ? 'bg-[#004ac6]' : 'bg-slate-200 text-slate-400 shadow-none'}`}>
-                          <span className="material-symbols-outlined text-[20px]">{isDone ? 'check' : step.icon}</span>
+                          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">{isDone ? 'check' : step.icon}</span>
                         </div>
-                        <span className={`text-[10px] mt-2 font-medium leading-tight ${isActive ? 'text-[#004ac6] font-bold' : 'text-slate-500'}`}>{step.label}</span>
+                        <span className={`text-[9px] sm:text-[10px] mt-1.5 sm:mt-2 font-medium leading-tight ${isActive ? 'text-[#004ac6] font-bold' : 'text-slate-500'}`}>{step.label}</span>
                       </div>
                     );
                   })}
                 </div>
 
                 {showCompleteConfirm === job.id && (
-                  <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-3">
-                    <span className="material-symbols-outlined text-[20px] text-amber-600 mt-0.5">warning_amber</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-amber-800">Confirm job completion?</p>
-                      <p className="text-xs text-amber-600 mt-0.5">This will mark the job as completed for the customer.</p>
-                      <div className="flex gap-2 mt-3">
-                        <button onClick={() => setShowCompleteConfirm(null)} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all">Cancel</button>
-                        <button onClick={() => advanceJob(job.id)} disabled={isUpdating} className="px-4 py-1.5 text-xs font-bold rounded-lg bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 disabled:opacity-50 transition-all">
+                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-2.5 sm:gap-3">
+                    <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-amber-600 mt-0.5 shrink-0">warning_amber</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-amber-800">Confirm job completion?</p>
+                      <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5">This will mark the job as completed for the customer.</p>
+                      <div className="flex gap-2 mt-2.5 sm:mt-3">
+                        <button onClick={() => setShowCompleteConfirm(null)} className="px-3 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all">Cancel</button>
+                        <button onClick={() => advanceJob(job.id)} disabled={isUpdating} className="px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 disabled:opacity-50 transition-all">
                           {isUpdating ? 'Updating…' : 'Yes, Complete'}
                         </button>
                       </div>
@@ -144,10 +151,11 @@ const JobDetailModal = ({ hook }) => {
               </div>
             )}
 
+            {/* Completed Badge */}
             {job.status === 'completed' && (
-              <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-200 flex items-center gap-4">
-                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
-                  <span className="material-symbols-outlined text-[28px]">verified</span>
+              <div className="bg-emerald-50 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-emerald-200 flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">verified</span>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-emerald-800">Job Completed</p>
@@ -156,14 +164,15 @@ const JobDetailModal = ({ hook }) => {
               </div>
             )}
 
+            {/* Rating */}
             {job.status === 'completed' && job.rating && (
-              <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
-                <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Customer Rating</p>
-                <div className="flex items-center gap-1">
+              <div className="bg-amber-50 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-amber-100">
+                <p className="text-[10px] sm:text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Customer Rating</p>
+                <div className="flex items-center gap-0.5 sm:gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={`material-symbols-outlined text-[20px] ${star <= job.rating ? 'text-amber-400' : 'text-slate-200'}`}
+                      className={`material-symbols-outlined text-[18px] sm:text-[20px] ${star <= job.rating ? 'text-amber-400' : 'text-slate-200'}`}
                       style={{ fontVariationSettings: star <= job.rating ? "'FILL' 1" : "'FILL' 0" }}
                     >
                       star
@@ -175,36 +184,38 @@ const JobDetailModal = ({ hook }) => {
             )}
 
             {job.status === 'completed' && !job.rating && (
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex items-center gap-3">
-                <span className="material-symbols-outlined text-slate-300 text-[24px]">hourglass_empty</span>
+              <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-100 flex items-center gap-3">
+                <span className="material-symbols-outlined text-slate-300 text-[20px] sm:text-[24px] shrink-0">hourglass_empty</span>
                 <p className="text-xs text-slate-400">Customer hasn't rated this job yet.</p>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                <span className="material-symbols-outlined text-[20px] text-slate-400 mb-1 block">person</span>
-                <p className="text-xs text-slate-400 font-medium">Customer</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">{job.name}</p>
+            {/* Customer & Address Info */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+              <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+                <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400 mb-1 block">person</span>
+                <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Customer</p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5 truncate">{job.name}</p>
                 <p className="text-xs text-slate-500 mt-1">{job.phone}</p>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                <span className="material-symbols-outlined text-[20px] text-slate-400 mb-1 block">location_on</span>
-                <p className="text-xs text-slate-400 font-medium">Address</p>
+              <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+                <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400 mb-1 block">location_on</span>
+                <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Address</p>
                 <p className="text-sm font-bold text-slate-800 mt-0.5 leading-snug">{job.address}</p>
               </div>
             </div>
 
             {job.photos > 0 && (
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-[20px] text-slate-400">photo_library</span>
-                <span className="text-sm text-slate-500">{job.photos} photo{job.photos !== 1 ? 's' : ''} attached</span>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400">photo_library</span>
+                <span className="text-xs sm:text-sm text-slate-500">{job.photos} photo{job.photos !== 1 ? 's' : ''} attached</span>
               </div>
             )}
           </div>
 
-          <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl p-6 pt-4 border-t border-slate-100 rounded-b-3xl">
-            <div className="flex gap-3">
+          {/* Modal Footer */}
+          <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl p-4 sm:p-6 pt-3 sm:pt-4 border-t border-slate-100">
+            <div className="flex gap-2.5 sm:gap-3">
               <button className="flex-1 py-3 rounded-xl text-sm font-bold text-[#004ac6] bg-blue-50 border border-blue-100 hover:bg-[#004ac6] hover:text-white transition-all flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">call</span>
                 Call
@@ -232,118 +243,261 @@ const AcceptedRequest = () => {
     formatDate, updatingId, advanceJob, setSelectedJob
   } = hook;
 
+  // ── Loading ────────────────────────────────────────────────
   if (loading) {
     return (
-      <main className="flex-1 p-8 bg-[#f8fafc] flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3 text-slate-400">
           <span className="material-symbols-outlined text-[32px] animate-spin">progress_activity</span>
           <p className="text-sm font-medium">Loading your jobs…</p>
         </div>
-      </main>
+      </div>
     );
   }
 
+  // ── Error ──────────────────────────────────────────────────
   if (error) {
     return (
-      <main className="flex-1 p-8 bg-[#f8fafc] flex items-center justify-center min-h-[400px]">
-        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-10 text-center max-w-md">
+      <div className="flex items-center justify-center min-h-[50vh] p-4">
+        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 sm:p-10 text-center max-w-md w-full">
           <span className="material-symbols-outlined text-[36px] text-red-400">error</span>
           <p className="text-sm font-bold text-slate-700 mt-3">{error}</p>
           <button onClick={fetchJobs} className="mt-4 px-4 py-2 rounded-xl text-sm font-bold text-white bg-[#004ac6]">
             Retry
           </button>
         </div>
-      </main>
+      </div>
     );
   }
 
+  // ── Main ───────────────────────────────────────────────────
   return (
-    <main className="flex-1 p-8 overflow-y-auto bg-[#f8fafc]">
+    <div className="space-y-4 sm:space-y-5">
       <JobDetailModal hook={hook} />
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Accepted Requests</h1>
-        <p className="text-sm text-slate-400 mt-1">Manage your jobs and track progress</p>
+      {/* ═══════════ UNIFIED PAGE HEADER ═══════════ */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800 tracking-tight">Accepted Requests</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-0.5 truncate">Manage your jobs and track progress</p>
+        </div>
+        <button
+          onClick={fetchJobs}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+        >
+          <span className="material-symbols-outlined text-[16px] sm:text-[18px]">refresh</span>
+          <span className="hidden sm:inline">Refresh</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* ═══════════ STATS — responsive grid (no horizontal scroll) ═══════════ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {[
-          { icon: 'work', label: 'Total Accepted', value: counts.all },
-          { icon: 'engineering', label: 'In Progress', value: counts['in-progress'] },
-          { icon: 'event', label: 'Accepted', value: counts.scheduled },
-          { icon: 'verified', label: 'Completed', value: counts.completed },
+          { icon: 'work', label: 'Total Accepted', value: counts.all, color: 'bg-blue-50 text-blue-600' },
+          { icon: 'engineering', label: 'In Progress', value: counts['in-progress'], color: 'bg-orange-50 text-orange-500' },
+          { icon: 'event', label: 'Accepted', value: counts.scheduled, color: 'bg-purple-50 text-purple-500' },
+          { icon: 'verified', label: 'Completed', value: counts.completed, color: 'bg-emerald-50 text-emerald-600' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100/80 shadow-sm">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3 bg-blue-50 text-blue-600">
-              <span className="material-symbols-outlined text-[22px]">{stat.icon}</span>
+          <div key={i} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-100/80 shadow-sm">
+            <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center ${stat.color} mb-2 sm:mb-3`}>
+              <span className="material-symbols-outlined text-[18px] sm:text-[22px]">{stat.icon}</span>
             </div>
-            <p className="text-2xl font-extrabold text-slate-800 tracking-tight">{stat.value}</p>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">{stat.label}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight leading-none">{stat.value}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1 sm:mt-0.5 leading-tight">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100/80 shadow-sm p-4 mb-6">
-        <div className="flex-1 flex items-center bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-          <span className="material-symbols-outlined text-slate-400 text-[20px] mr-3">search</span>
+      {/* ═══════════ SEARCH + FILTERS ═══════════ */}
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100/80 shadow-sm p-3 sm:p-4">
+        {/* Search bar — always visible, compact on mobile */}
+        <div className="flex items-center bg-slate-50 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-100">
+          <span className="material-symbols-outlined text-slate-400 text-[18px] sm:text-[20px] mr-2 sm:mr-3">search</span>
           <input
             type="text"
-            placeholder="Search by job ID, customer, issue, or address..."
+            placeholder="Search by job, customer, address…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-transparent outline-none text-sm text-slate-600 w-full placeholder-slate-400"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all">
-              <span className="material-symbols-outlined text-[18px]">close</span>
+            <button onClick={() => setSearchQuery('')} className="p-0.5 sm:p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all shrink-0">
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">close</span>
             </button>
           )}
         </div>
 
-        <div className="flex gap-2 mt-4 flex-wrap">
-          {filters.map((filter) => (
-            <button
-              key={filter.key}
-              onClick={() => setActiveFilter(filter.key)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200
-                ${activeFilter === filter.key ? 'bg-[#004ac6] text-white shadow-md shadow-[#004ac6]/20' : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'}`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{filter.icon}</span>
-              {filter.label}
-              <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md ${activeFilter === filter.key ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-500'}`}>
-                {counts[filter.key]}
-              </span>
-            </button>
-          ))}
+        {/* Search result indicator */}
+        {searchQuery && (
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-2 px-1 truncate">
+            &ldquo;{searchQuery}&rdquo; — {filteredJobs.length} result{filteredJobs.length !== 1 ? 's' : ''}
+          </p>
+        )}
+
+        {/* Filter tabs */}
+        <div className="flex gap-1.5 sm:gap-2 mt-3 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+          {filters.map((filter) => {
+            const isActive = activeFilter === filter.key;
+            return (
+              <button
+                key={filter.key}
+                onClick={() => setActiveFilter(filter.key)}
+                className={`inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap shrink-0 border
+                  ${isActive
+                    ? 'bg-[#004ac6] text-white border-[#004ac6] shadow-md shadow-[#004ac6]/20'
+                    : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 active:bg-slate-200'
+                  }`}
+              >
+                <span className="material-symbols-outlined text-[14px] sm:text-[18px]">{filter.icon}</span>
+                <span className="hidden xs:inline">{filter.label}</span>
+                <span className={`text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded-md ${isActive ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-500'}`}>
+                  {counts[filter.key]}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
+      {/* ═══════════ REQUEST LIST ═══════════ */}
       {filteredJobs.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100/80 shadow-sm p-16 text-center">
-          <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 rounded-2xl flex items-center justify-center">
-            <span className="material-symbols-outlined text-[40px] text-slate-300">work_off</span>
+        <div className="bg-white rounded-2xl border border-slate-100/80 shadow-sm p-10 sm:p-16 text-center">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-slate-50 rounded-2xl flex items-center justify-center">
+            <span className="material-symbols-outlined text-[32px] sm:text-[40px] text-slate-300">work_off</span>
           </div>
-          <h3 className="text-lg font-bold text-slate-700">No jobs found</h3>
+          <h3 className="text-base sm:text-lg font-bold text-slate-700">No jobs found</h3>
           <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">
-            {searchQuery ? `No results for "${searchQuery}".` : `No ${activeFilter === 'all' ? '' : activeFilter.replace('-', ' ') + ' '}jobs at the moment.`}
+            {searchQuery
+              ? `No results for "${searchQuery}".`
+              : `No ${activeFilter === 'all' ? '' : activeFilter.replace('-', ' ') + ' '}jobs at the moment.`}
           </p>
           {(searchQuery || activeFilter !== 'all') && (
-            <button onClick={() => { setSearchQuery(''); setActiveFilter('all'); }} className="mt-4 text-sm font-semibold text-[#004ac6] hover:underline">Clear filters</button>
+            <button
+              onClick={() => { setSearchQuery(''); setActiveFilter('all'); }}
+              className="mt-4 text-sm font-semibold text-[#004ac6] hover:underline"
+            >
+              Clear filters
+            </button>
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2.5 sm:space-y-3">
           {filteredJobs.map((job) => {
             const catColor = getCategoryColor(job.category);
             const statusConfig = getStatusConfig(job.status);
             const isUpdating = updatingId === job.id;
 
             return (
-              <div key={job.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${job.status === 'completed' ? 'border-emerald-100' : job.urgency === 'Emergency' ? 'border-red-200/60' : 'border-slate-100/80'}`}>
-                <div className={`h-1 ${job.status === 'completed' ? 'bg-gradient-to-r from-emerald-400 to-emerald-300' : job.status === 'in-progress' ? 'bg-gradient-to-r from-[#004ac6] to-[#57dffe]' : 'bg-gradient-to-r from-purple-400 to-purple-300'}`} />
+              <div
+                key={job.id}
+                className={`bg-white rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group
+                  ${job.status === 'completed'
+                    ? 'border-emerald-100'
+                    : job.urgency === 'Emergency'
+                    ? 'border-red-200/60'
+                    : 'border-slate-100/80'
+                  }`}
+              >
+                {/* Top accent line */}
+                <div className={`h-0.5 sm:h-1 ${
+                  job.status === 'completed'
+                    ? 'bg-gradient-to-r from-emerald-400 to-emerald-300'
+                    : job.status === 'in-progress'
+                    ? 'bg-gradient-to-r from-[#004ac6] to-[#57dffe]'
+                    : 'bg-gradient-to-r from-purple-400 to-purple-300'
+                }`} />
 
-                <div className="p-5">
-                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                <div className="px-4 py-3 sm:px-5 sm:py-4">
+
+                  {/* ═══════ MOBILE CARD ═══════ */}
+                  <div className="sm:hidden space-y-2">
+                    {/* Badges row */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${catColor.bg} ${catColor.text} ${catColor.border} border flex items-center gap-1`}>
+                        <span className="material-symbols-outlined text-[12px]">{getCategoryIcon(job.category)}</span>
+                        {job.category}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} border flex items-center gap-1`}>
+                        <span className="material-symbols-outlined text-[11px]">{statusConfig.icon}</span>
+                        {statusConfig.label}
+                      </span>
+                      {job.urgency === 'Emergency' && job.status !== 'completed' && (
+                        <span className="text-[9px] font-extrabold uppercase bg-red-500 text-white px-2 py-0.5 rounded-md">Emergency</span>
+                      )}
+                      <span className="text-[10px] text-slate-400 ml-auto">{job.id}</span>
+                    </div>
+
+                    {/* Issue */}
+                    <p
+                      className="font-bold text-slate-800 text-[13px] leading-snug line-clamp-2 cursor-pointer group-hover:text-[#004ac6] transition-colors"
+                      onClick={() => setSelectedJob(job)}
+                    >
+                      {job.issue}
+                    </p>
+
+                    {/* Customer + Address */}
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                      <span className="flex items-center gap-0.5 font-medium text-slate-700">
+                        <span className="material-symbols-outlined text-[13px] text-[#004ac6]">person</span>
+                        {job.name}
+                      </span>
+                      <span className="text-slate-300">•</span>
+                      <span className="flex items-center gap-0.5 truncate min-w-0">
+                        <span className="material-symbols-outlined text-[13px] text-red-400 shrink-0">home</span>
+                        <span className="truncate">{job.address}</span>
+                      </span>
+                    </div>
+
+                    {/* Date */}
+                    <div className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                      <span className="material-symbols-outlined text-[12px]">schedule</span>
+                      {formatDate(job.createdAt)}
+                    </div>
+
+                    {/* Mini Stepper */}
+                    <MiniStepper currentStep={job.currentStep} status={job.status} steps={steps} />
+
+                    {/* Action buttons */}
+                    <div className="flex items-stretch gap-2 pt-1">
+                      <button
+                        onClick={() => setSelectedJob(job)}
+                        className="w-10 shrink-0 rounded-lg text-xs font-bold text-[#004ac6] bg-blue-50 border border-blue-100 active:bg-[#004ac6] active:text-white transition-all flex items-center justify-center"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                      </button>
+
+                      {job.status !== 'completed' ? (
+                        <button
+                          onClick={() => advanceJob(job.id)}
+                          disabled={isUpdating}
+                          className="flex-1 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#004ac6] to-[#57dffe] shadow-sm disabled:opacity-50 active:shadow-md transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">
+                            {isUpdating ? 'progress_activity' : job.currentStep === 1 ? 'check_circle' : 'play_arrow'}
+                          </span>
+                          {isUpdating ? 'Updating…' : job.currentStep === 1 ? 'Complete Job' : 'Start Job'}
+                        </button>
+                      ) : job.rating ? (
+                        <div className="flex-1 flex items-center justify-between px-3 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100">
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                            {job.rating}.0
+                          </span>
+                          {job.review && (
+                            <span className="text-[10px] text-amber-500 font-medium truncate max-w-[60%]">&quot;{job.review}&quot;</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex items-center gap-1.5 px-3 rounded-lg text-xs text-slate-400 bg-slate-50 border border-slate-100">
+                          <span className="material-symbols-outlined text-[14px]">hourglass_empty</span>
+                          Awaiting rating
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ═══════ DESKTOP CARD ═══════ */}
+                  <div className="hidden sm:flex flex-col lg:flex-row lg:items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-3">
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${catColor.bg} ${catColor.text} ${catColor.border} border flex items-center gap-1`}>
@@ -360,7 +514,10 @@ const AcceptedRequest = () => {
                         <span className="text-xs text-slate-400 ml-auto lg:ml-0">{job.id}</span>
                       </div>
 
-                      <h3 className="font-bold text-slate-800 text-[15px] leading-snug mb-1.5 cursor-pointer hover:text-[#004ac6] transition-colors" onClick={() => setSelectedJob(job)}>
+                      <h3
+                        className="font-bold text-slate-800 text-[15px] leading-snug mb-1.5 cursor-pointer hover:text-[#004ac6] transition-colors"
+                        onClick={() => setSelectedJob(job)}
+                      >
                         {job.issue}
                       </h3>
 
@@ -386,11 +543,14 @@ const AcceptedRequest = () => {
                       <MiniStepper currentStep={job.currentStep} status={job.status} steps={steps} />
                     </div>
 
-                    <div className="flex lg:flex-col items-center lg:items-end gap-4 lg:min-w-[170px] shrink-0">
+                    <div className="flex lg:flex-col items-center lg:items-end gap-2 lg:min-w-[170px] shrink-0">
                       <div className="flex gap-2 w-full lg:w-auto">
-                        <button onClick={() => setSelectedJob(job)} className="flex-1 lg:flex-none px-4 py-2.5 rounded-xl text-xs font-bold text-[#004ac6] bg-blue-50 border border-blue-100 hover:bg-[#004ac6] hover:text-white transition-all flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedJob(job)}
+                          className="flex-1 lg:flex-none px-4 py-2.5 rounded-xl text-xs font-bold text-[#004ac6] bg-blue-50 border border-blue-100 hover:bg-[#004ac6] hover:text-white transition-all flex items-center justify-center gap-1.5"
+                        >
                           <span className="material-symbols-outlined text-[16px]">visibility</span>
-                          <span className="hidden sm:inline">Details</span>
+                          Details
                         </button>
                         {job.status !== 'completed' && (
                           <button
@@ -403,7 +563,10 @@ const AcceptedRequest = () => {
                           </button>
                         )}
                         {job.status === 'completed' && job.rating && (
-                          <span className="px-3 py-2.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 flex items-center gap-1" title={job.review || ''}>
+                          <span
+                            className="px-3 py-2.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 flex items-center gap-1"
+                            title={job.review || ''}
+                          >
                             <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                             {job.rating}.0
                           </span>
@@ -411,6 +574,7 @@ const AcceptedRequest = () => {
                       </div>
                     </div>
                   </div>
+
                 </div>
               </div>
             );
@@ -418,8 +582,14 @@ const AcceptedRequest = () => {
         </div>
       )}
 
-      <div className="h-12" />
-    </main>
+      {/* Bottom spacer for mobile scroll comfort */}
+      <div className="h-4 sm:h-8" />
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      `}</style>
+    </div>
   );
 };
 
