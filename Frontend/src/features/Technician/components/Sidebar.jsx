@@ -25,16 +25,21 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     <>
       {/* Mobile Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-300 ${sidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-300 ${sidebarOpen
+          ? "opacity-100 visible"
+          : "opacity-0 invisible"
           }`}
         onClick={() => setSidebarOpen(false)}
       />
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-100 flex flex-col z-50 shadow-[4px_0_30px_-10px_rgba(0,0,0,0.05)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${sidebarOpen
-            ? 'w-72 translate-x-0'
-            : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0 lg:shadow-none lg:overflow-hidden'
+        className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-100 flex flex-col z-50
+  transition-all duration-300 ease-in-out
+  shadow-[4px_0_30px_-10px_rgba(0,0,0,0.05)]
+  ${sidebarOpen
+            ? "translate-x-0 w-72"
+            : "-translate-x-full lg:translate-x-0 lg:w-0 lg:overflow-hidden lg:border-r-0 lg:shadow-none"
           }`}
       >
         <div className="w-72 min-w-[18rem] h-full flex flex-col">
@@ -58,9 +63,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
             </NavLink>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200 group"
+              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200 group"
             >
-              <span className="material-symbols-outlined text-[22px] group-hover:rotate-90 transition-transform duration-200">close</span>
+              <span className="material-symbols-outlined text-[22px] group-hover:rotate-90 transition-transform duration-200">
+                close
+              </span>
             </button>
           </div>
 
