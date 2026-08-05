@@ -7,42 +7,48 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "service_requests")
-public class ServiceRequest {
+public class ServiceRequest implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     private String id;
 
-    private String customerId;   // linked to the logged-in customer's User id
+    private String customerId;
     private String fullName;
     private String mobileNumber;
     private String location;
     private Double latitude;
     private Double longitude;
 
-    @Indexed   // 🔑 this is what makes technician filtering fast
+    @Indexed
     private TechnicianType category;
 
     private String description;
-    private String urgency;      // "standard" | "emergency"
+    private String urgency;
     private List<String> photoUrls;
 
     @Indexed
     private RequestStatus status = RequestStatus.PENDING;
 
-    private String assignedTechnicianId;  // null until a technician accepts
+    private String assignedTechnicianId;
 
-    // 🔑 NEW — customer's rating of the technician for THIS specific job
-    private Integer rating;      // 1-5, null until customer rates it
-    private String review;       // optional free-text review
+    private Integer rating;
+    private String review;
 
     @CreatedDate
     private LocalDateTime createdAt;
 
-    // Getters and setters
+    private LocalDateTime acceptedAt;       // ← NEW
+    private LocalDateTime inProgressAt;     // ← NEW
+    private LocalDateTime completedAt;      // ← NEW
+
+    // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -80,7 +86,7 @@ public class ServiceRequest {
     public void setStatus(RequestStatus status) { this.status = status; }
 
     public String getAssignedTechnicianId() { return assignedTechnicianId; }
-    public void setAssignedTechnicianId(String assignedTechnicianId) { this.assignedTechnicianId = assignedTechnicianId; }
+    public void setAssignedTechnicianId(String id) { this.assignedTechnicianId = id; }
 
     public Integer getRating() { return rating; }
     public void setRating(Integer rating) { this.rating = rating; }
@@ -90,4 +96,13 @@ public class ServiceRequest {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getAcceptedAt() { return acceptedAt; }
+    public void setAcceptedAt(LocalDateTime acceptedAt) { this.acceptedAt = acceptedAt; }
+
+    public LocalDateTime getInProgressAt() { return inProgressAt; }
+    public void setInProgressAt(LocalDateTime inProgressAt) { this.inProgressAt = inProgressAt; }
+
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
 }
