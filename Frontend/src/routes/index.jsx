@@ -37,6 +37,9 @@ const CustomerRequest = lazy(() =>
 const AcceptedRequest = lazy(() =>
   import("../features/Technician/pages/AcceptedRequest")
 );
+const Notifications = lazy(() =>
+  import("../features/Technician/pages/Notifications")
+);
 
 // --- Suspense Wrapper ---
 const withSuspense = (Component) => (
@@ -72,6 +75,7 @@ export const router = createBrowserRouter([
       { index: true, element: withSuspense(TechMiddleContent) },
       { path: "customer-requests", element: withSuspense(CustomerRequest) },
       { path: "accepted-requests", element: withSuspense(AcceptedRequest) },
+      { path: "notifications", element: withSuspense(Notifications) },
     ],
   },
 ]);

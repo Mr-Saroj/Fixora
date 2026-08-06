@@ -7,6 +7,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     { icon: 'inbox', label: 'Customer Requests', to: '/technician-dashboard/customer-requests' },
     { icon: 'task_alt', label: 'Accepted Requests', to: '/technician-dashboard/accepted-requests' },
     { icon: 'chat_bubble', label: 'Messages', to: '/technician-dashboard/messages' },
+    { icon: 'notifications', label: 'Notifications', to: '/technician-dashboard/notifications', badge: '4' },
     { icon: 'settings', label: 'Settings', to: '/technician-dashboard/settings' },
   ];
 
@@ -25,10 +26,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     <>
       {/* Mobile Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-300 ${sidebarOpen
-          ? "opacity-100 visible"
-          : "opacity-0 invisible"
-          }`}
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-300 ${
+          sidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+        }`}
         onClick={() => setSidebarOpen(false)}
       />
 
@@ -38,12 +38,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   transition-all duration-300 ease-in-out
   shadow-[4px_0_30px_-10px_rgba(0,0,0,0.05)]
   ${sidebarOpen
-            ? "translate-x-0 w-72"
-            : "-translate-x-full lg:translate-x-0 lg:w-0 lg:overflow-hidden lg:border-r-0 lg:shadow-none"
-          }`}
+    ? 'translate-x-0 w-72'
+    : '-translate-x-full lg:translate-x-0 lg:w-0 lg:overflow-hidden lg:border-r-0 lg:shadow-none'
+  }`}
       >
         <div className="w-72 min-w-[18rem] h-full flex flex-col">
-
           {/* Logo + Close */}
           <div className="p-6 pb-8 border-b border-slate-100 flex items-start justify-between">
             <NavLink to="/technician-dashboard" end className="inline-block" onClick={handleMobileClose}>
@@ -82,9 +81,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                 end={link.end}
                 onClick={handleMobileClose}
                 className={({ isActive }) =>
-                  `w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 group relative ${isActive
-                    ? 'bg-gradient-to-r from-[#004ac6]/10 to-[#57dffe]/5 text-[#004ac6]'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                  `w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 group relative ${
+                    isActive
+                      ? 'bg-gradient-to-r from-[#004ac6]/10 to-[#57dffe]/5 text-[#004ac6]'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                   }`
                 }
               >
@@ -121,7 +121,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
               </a>
             ))}
           </div>
-
         </div>
       </aside>
     </>

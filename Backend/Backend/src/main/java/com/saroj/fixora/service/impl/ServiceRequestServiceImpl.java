@@ -89,6 +89,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 "REQUEST_CREATED",
                 saved.getId(),
                 saved.getCategory().name(),
+                saved.getLocation(),        // ← ADD location ✅
                 null
         ));
 
@@ -223,6 +224,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                     "REQUEST_ACCEPTED",
                     requestId,
                     request.getCategory().name(),
+                    request.getLocation(),      // ← FIX
                     technicianEmail
             ));
 
