@@ -1,5 +1,6 @@
 import React from "react";
 import "./Hero.css";
+import GradientButton from "../../../../components/ui/GradientButton";
 
 const Hero = () => {
   return (
@@ -28,16 +29,14 @@ const Hero = () => {
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
 
-            <a
-              href="/login"
-              className="w-full sm:w-auto bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white text-[15px] font-medium px-8 py-4 rounded-xl flex items-center justify-center group shadow-[0_10px_25px_-5px_rgba(0,74,198,0.4)] hover:-translate-y-1 hover:shadow-lg transition-all"
+            <GradientButton
+              to="/login"
+              size="xl"
+              showArrow
+              className="w-full sm:w-auto"
             >
               Book a Service
-
-              <span className="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform">
-                arrow_forward
-              </span>
-            </a>
+            </GradientButton>
 
             <a
               href="/login"
@@ -67,7 +66,7 @@ const Hero = () => {
 
               <img
                 className="w-12 h-12 rounded-full border-2 border-white object-cover shadow-md"
-               src="/Images/User3.avif"
+                src="/Images/User3.avif"
                 alt="Plumber"
               />
 

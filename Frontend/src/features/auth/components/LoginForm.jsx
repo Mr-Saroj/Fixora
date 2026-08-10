@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { inputBaseClass } from '../utils/inputStyles';
+import GradientButton from '../../../components/ui/GradientButton';
+
 
 const LoginForm = () => {
   const { login, isLoading } = useAuth();
@@ -42,13 +44,25 @@ const LoginForm = () => {
         />
       </div>
 
-      <button 
-        type="submit" 
+      {/* ── Replaced raw <button> with GradientButton ── */}
+      <GradientButton
+        type="submit"
+        size="xl"
         disabled={isLoading}
-        className="w-full py-4 mt-2 bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white font-bold text-[16px] rounded-xl shadow-[0_10px_20px_-5px_rgba(0,74,198,0.4)] hover:opacity-95 active:scale-95 transition-all disabled:opacity-70 flex justify-center items-center"
+        className="w-full mt-2 font-bold text-[16px]"
       >
-        {isLoading ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : 'Sign In'}
-      </button>
+        {isLoading ? (
+          <span className="material-symbols-outlined animate-spin">
+            progress_activity
+          </span>
+        ) : (
+          <>
+            <span className="material-symbols-outlined text-[20px]">login</span>
+            Sign In
+          </>
+        )}
+      </GradientButton>
+
     </form>
   );
 };

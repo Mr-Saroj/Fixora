@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
     ],
+    define: {
+      global: 'globalThis',    // ← ADD THIS LINE
+    },
     server: {
       proxy: {
         '/api': {

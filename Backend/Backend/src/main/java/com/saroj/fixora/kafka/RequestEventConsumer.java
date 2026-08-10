@@ -9,6 +9,7 @@ import com.saroj.fixora.model.enums.TechnicianType;
 import com.saroj.fixora.repository.NotificationRepository;
 import com.saroj.fixora.repository.ServiceRequestRepository;
 import com.saroj.fixora.repository.UserRepository;
+import com.saroj.fixora.service.WebSocketNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -27,54 +28,59 @@ public class RequestEventConsumer {
     private ServiceRequestRepository requestRepository;
 
     @Autowired
-    private UserRepository userRepository;                  // ← NEW
+    private UserRepository userRepository;
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private WebSocketNotificationService webSocketNotificationService; // ← NEW
 
     @KafkaListener(topics = "request-events", groupId = "fixora-group")
     public void handleRequestEvent(RequestEvent event) {
 
         System.out.println("Kafka received event: " + event.getEvent()
-                + " for category: " + event.getCategory());
+                + " category: " + event.getCategory()
+                + " location: " + event.getLocation());
 
         if ("REQUEST_CREATED".equals(event.getEvent())) {
-            // evict + rebuild cache
             evictCache(event.getCategory());
             rebuildCache(event.getCategory());
-
-            // send notifications to matched technicians
-            sendNotificationsToTechnicians(event);          // ← only on REQUEST_CREATED
+            sendNotificationsToTechnicians(event);
         }
 
         if ("REQUEST_ACCEPTED".equals(event.getEvent())) {
-            // only evict + rebuild cache
-            // no notification needed on accept
             evictCache(event.getCategory());
             rebuildCache(event.getCategory());
         }
     }
 
-    // ── send notification to matched technicians ──────────────────────────
     private void sendNotificationsToTechnicians(RequestEvent event) {
         try {
             TechnicianType type = TechnicianType.valueOf(event.getCategory());
             String location = event.getLocation() != null
                     ? event.getLocation().toLowerCase() : "";
 
-            // find ALL technicians of matching category
+            System.out.println("Finding technicians for type: " + type);
+            System.out.println("Customer location: " + location);
+
             List<User> allTechnicians = userRepository.findByTechnicianType(type);
+            System.out.println("Total technicians found: " + allTechnicians.size());
 
             for (User technician : allTechnicians) {
 
-                // check ONLY city match — no district
                 String techCity = technician.getCity() != null
                         ? technician.getCity().toLowerCase() : "";
 
                 boolean cityMatch = !techCity.isEmpty()
-                        && location.contains(techCity);     // ← only city check
+                        && location.contains(techCity);
+
+                System.out.println("Checking: " + technician.getEmail()
+                        + " city: " + techCity
+                        + " match: " + cityMatch);
 
                 if (cityMatch) {
+                    // save to MongoDB
                     Notification notification = new Notification();
                     notification.setTechnicianId(technician.getId());
                     notification.setRequestId(event.getRequestId());
@@ -88,23 +94,25 @@ public class RequestEventConsumer {
                     notification.setRead(false);
                     notification.setCreatedAt(LocalDateTime.now());
 
-                    notificationRepository.save(notification);
-                    System.out.println("Notification sent to: "
-                            + technician.getEmail()
-                            + " city matched: " + techCity);
-                } else {
-                    System.out.println("Skipped: " + technician.getEmail()
-                            + " city: " + technician.getCity()
-                            + " does not match: " + event.getLocation());
+                    Notification saved = notificationRepository.save(notification);
+                    System.out.println("✅ Notification saved for: "
+                            + technician.getEmail());
+
+                    // ← NEW: push via WebSocket instantly
+                    webSocketNotificationService
+                            .pushNotificationToTechnician(
+                                    technician.getId(),
+                                    saved
+                            );
                 }
             }
 
         } catch (Exception e) {
-            System.out.println("Notification send failed: " + e.getMessage());
+            System.out.println("Notification failed: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    // ── evict stale cache ─────────────────────────────────────────────────
     private void evictCache(String category) {
         var cache = cacheManager.getCache("requests");
         if (cache != null) {
@@ -113,14 +121,11 @@ public class RequestEventConsumer {
         }
     }
 
-    // ── rebuild fresh cache from MongoDB ──────────────────────────────────
     private void rebuildCache(String category) {
         try {
             TechnicianType type = TechnicianType.valueOf(category);
-
             List<ServiceRequest> freshList = requestRepository
                     .findByCategoryAndStatus(type, RequestStatus.PENDING);
-
             var cache = cacheManager.getCache("requests");
             if (cache != null) {
                 cache.put(category, freshList);
@@ -128,8 +133,7 @@ public class RequestEventConsumer {
                         + " with " + freshList.size() + " requests");
             }
         } catch (Exception e) {
-            System.out.println("Cache rebuild failed for: " + category
-                    + " reason: " + e.getMessage());
+            System.out.println("Cache rebuild failed: " + e.getMessage());
         }
     }
 }

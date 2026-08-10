@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import GradientButton from "../ui/GradientButton";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,11 +39,10 @@ const Navbar = () => {
   const desktopLink = (id, label) => (
     <a
       href={`#${id}`}
-      className={`text-[16px] transition-all duration-300 ${
-        activeSection === id
+      className={`text-[16px] transition-all duration-300 ${activeSection === id
           ? "text-primary font-bold border-b-2 border-primary pb-1"
           : "text-text-muted hover:text-primary"
-      }`}
+        }`}
     >
       {label}
     </a>
@@ -52,11 +52,10 @@ const Navbar = () => {
     <a
       href={`#${id}`}
       onClick={() => setMenuOpen(false)}
-      className={`transition-all duration-300 ${
-        activeSection === id
+      className={`transition-all duration-300 ${activeSection === id
           ? "text-primary font-semibold"
           : "text-text-muted hover:text-primary"
-      }`}
+        }`}
     >
       {label}
     </a>
@@ -127,13 +126,9 @@ const Navbar = () => {
           >
             Login
           </Link>
-
-          <Link
-            to="/register"
-            className="bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white text-[14px] font-medium px-6 py-2.5 rounded-full shadow-lg hover:-translate-y-1 transition"
-          >
+          <GradientButton to="/register" size="normal">
             Get Started
-          </Link>
+          </GradientButton>
         </div>
 
         {/* Mobile Toggle */}
@@ -142,30 +137,26 @@ const Navbar = () => {
           className="md:hidden flex flex-col justify-center items-center w-10 h-10"
         >
           <span
-            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${
-              menuOpen ? "rotate-45 translate-y-2" : ""
-            }`}
+            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-2" : ""
+              }`}
           />
 
           <span
-            className={`block h-0.5 w-6 bg-black my-1 transition-all duration-300 ${
-              menuOpen ? "opacity-0" : ""
-            }`}
+            className={`block h-0.5 w-6 bg-black my-1 transition-all duration-300 ${menuOpen ? "opacity-0" : ""
+              }`}
           />
 
           <span
-            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${
-              menuOpen ? "-rotate-45 -translate-y-2" : ""
-            }`}
+            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-2" : ""
+              }`}
           />
         </button>
       </div>
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 bg-white shadow-lg ${
-          menuOpen ? "max-h-[500px]" : "max-h-0"
-        }`}
+        className={`md:hidden overflow-hidden transition-all duration-300 bg-white shadow-lg ${menuOpen ? "max-h-[500px]" : "max-h-0"
+          }`}
       >
         <div className="flex flex-col px-6 py-4 space-y-5">
 

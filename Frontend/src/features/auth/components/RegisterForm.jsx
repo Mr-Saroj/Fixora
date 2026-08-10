@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import { inputBaseClass } from '../utils/inputStyles';
 import { roleConfig } from '../utils/roleConfig';
 import { technicianTypes } from '../utils/technicianTypes';
+import GradientButton from '../../../components/ui/GradientButton';
+
 
 const RegisterForm = () => {
   const { register, isLoading } = useAuth();
@@ -274,10 +276,12 @@ const RegisterForm = () => {
           />
         </div>
 
-        <button
+        {/* ── Replaced raw <button> with GradientButton ── */}
+        <GradientButton
           type="submit"
+          size="xl"
           disabled={isLoading}
-          className="w-full py-4 mt-4 bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white font-bold text-[16px] rounded-xl shadow-[0_10px_20px_-5px_rgba(0,74,198,0.4)] hover:opacity-95 hover:shadow-[0_12px_24px_-5px_rgba(0,74,198,0.5)] active:scale-[0.98] transition-all duration-200 disabled:opacity-70 flex justify-center items-center gap-2"
+          className="w-full mt-4 gap-2 font-bold text-[16px]"
         >
           {isLoading ? (
             <span className="material-symbols-outlined animate-spin text-[22px]">
@@ -291,7 +295,8 @@ const RegisterForm = () => {
               {role === 'customer' ? 'Create Customer Account' : 'Create Technician Account'}
             </>
           )}
-        </button>
+        </GradientButton>
+
       </form>
     </div>
   );

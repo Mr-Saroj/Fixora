@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { sendForgotPasswordOtp } from '../services/authService';
 import { inputBaseClass } from '../utils/inputStyles';
+import GradientButton from '../../../components/ui/GradientButton';
+
 
 // ─── Step 1: Email Entry ─────────────────────────────────────────────────────
 export const EmailStep = ({ onNext }) => {
@@ -28,15 +30,22 @@ export const EmailStep = ({ onNext }) => {
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
         />
       </div>
-      <button
-        onClick={handleSubmit}
+
+      <GradientButton
+        size="xl"
         disabled={isLoading || !email}
-        className="w-full py-4 bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white font-bold text-[16px] rounded-xl shadow-[0_10px_20px_-5px_rgba(0,74,198,0.4)] hover:opacity-95 active:scale-95 transition-all disabled:opacity-70 flex justify-center items-center"
+        className="w-full font-bold text-[16px]"
+        onClick={handleSubmit}
       >
-        {isLoading
-          ? <span className="material-symbols-outlined animate-spin">progress_activity</span>
-          : 'Send OTP'}
-      </button>
+        {isLoading ? (
+          <span className="material-symbols-outlined animate-spin">progress_activity</span>
+        ) : (
+          <>
+            <span className="material-symbols-outlined text-[20px]">send</span>
+            Send OTP
+          </>
+        )}
+      </GradientButton>
     </div>
   );
 };
@@ -115,15 +124,21 @@ export const OtpStep = ({ email, onNext, onBack }) => {
         ))}
       </div>
 
-      <button
-        onClick={handleVerify}
+      <GradientButton
+        size="xl"
         disabled={isLoading || otp.join('').length < 6}
-        className="w-full py-4 bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white font-bold text-[16px] rounded-xl shadow-[0_10px_20px_-5px_rgba(0,74,198,0.4)] hover:opacity-95 active:scale-95 transition-all disabled:opacity-70 flex justify-center items-center"
+        className="w-full font-bold text-[16px]"
+        onClick={handleVerify}
       >
-        {isLoading
-          ? <span className="material-symbols-outlined animate-spin">progress_activity</span>
-          : 'Verify OTP'}
-      </button>
+        {isLoading ? (
+          <span className="material-symbols-outlined animate-spin">progress_activity</span>
+        ) : (
+          <>
+            <span className="material-symbols-outlined text-[20px]">verified</span>
+            Verify OTP
+          </>
+        )}
+      </GradientButton>
 
       <div className="text-center space-y-2">
         {resendCountdown > 0 ? (
@@ -202,15 +217,21 @@ export const NewPasswordStep = ({ email, otp }) => {
         />
       </div>
 
-      <button
-        onClick={handleReset}
+      <GradientButton
+        size="xl"
         disabled={isLoading || !newPassword || !confirmPassword}
-        className="w-full py-4 bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white font-bold text-[16px] rounded-xl shadow-[0_10px_20px_-5px_rgba(0,74,198,0.4)] hover:opacity-95 active:scale-95 transition-all disabled:opacity-70 flex justify-center items-center"
+        className="w-full font-bold text-[16px]"
+        onClick={handleReset}
       >
-        {isLoading
-          ? <span className="material-symbols-outlined animate-spin">progress_activity</span>
-          : 'Reset Password'}
-      </button>
+        {isLoading ? (
+          <span className="material-symbols-outlined animate-spin">progress_activity</span>
+        ) : (
+          <>
+            <span className="material-symbols-outlined text-[20px]">lock_reset</span>
+            Reset Password
+          </>
+        )}
+      </GradientButton>
     </div>
   );
 };

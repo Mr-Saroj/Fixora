@@ -41,6 +41,9 @@ const Notifications = lazy(() =>
   import("../features/Technician/pages/Notifications")
 );
 
+// ⬇️ ADD THIS: Lazy import for the 404 Page
+const NotFound = lazy(() => import("../components/common/NotFound"));
+
 // --- Suspense Wrapper ---
 const withSuspense = (Component) => (
   <Suspense fallback={<PageLoader />}>
@@ -78,4 +81,10 @@ export const router = createBrowserRouter([
       { path: "notifications", element: withSuspense(Notifications) },
     ],
   },
+  
+  // ⬇️ ADD THIS: Catch-all 404 Route (Must be at the very bottom)
+  {
+    path: "*",
+    element: withSuspense(NotFound),
+  }
 ]);

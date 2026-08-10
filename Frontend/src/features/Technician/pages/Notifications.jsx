@@ -1,42 +1,28 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useAppSelector } from '../../../redux/hooks';
-import API from '../../../services/api';
+import React from 'react';
+import useNotifications from '../hooks/useNotifications';
 
-// Notification API calls
-const notificationAPI = {
-  getAll:       () => API.get('/notifications'),
-  getUnreadCount: () => API.get('/notifications/unread-count'),
-  markAsRead:   (id) => API.patch(`/notifications/${id}/read`),
-  markAllAsRead: () => API.patch('/notifications/read-all'),
-  delete:       (id) => API.delete(`/notifications/${id}`),
-  clearAll:     () => API.delete('/notifications/clear-all'),
-};
-
+// ── Notification type styles ──────────────────────────────────────────
 const NOTIFICATION_TYPES = {
   NEW_REQUEST: {
     icon: 'add_circle',
-    color: 'blue',
     bg: 'bg-blue-50',
     text: 'text-blue-600',
     border: 'border-blue-100',
   },
   JOB_ACCEPTED: {
     icon: 'check_circle',
-    color: 'emerald',
     bg: 'bg-emerald-50',
     text: 'text-emerald-600',
     border: 'border-emerald-100',
   },
   JOB_COMPLETED: {
     icon: 'task_alt',
-    color: 'indigo',
     bg: 'bg-indigo-50',
     text: 'text-indigo-600',
     border: 'border-indigo-100',
   },
   SYSTEM: {
     icon: 'info',
-    color: 'slate',
     bg: 'bg-slate-100',
     text: 'text-slate-500',
     border: 'border-slate-200',
@@ -44,12 +30,12 @@ const NOTIFICATION_TYPES = {
 };
 
 const FILTER_TABS = [
-  { key: 'all',    label: 'All' },
+  { key: 'all', label: 'All' },
   { key: 'unread', label: 'Unread' },
-  { key: 'read',   label: 'Read' },
+  { key: 'read', label: 'Read' },
 ];
 
-// format createdAt from backend to readable time
+// ── Format time ───────────────────────────────────────────────────────
 const formatTime = (createdAt) => {
   if (!createdAt) return '';
   const now = new Date();
@@ -59,132 +45,49 @@ const formatTime = (createdAt) => {
   const diffHr = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHr / 24);
 
-  if (diffMin < 1)  return 'Just now';
+  if (diffMin < 1) return 'Just now';
   if (diffMin < 60) return `${diffMin} min ago`;
-  if (diffHr  < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+  if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
   return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
 };
 
-// map backend notification to frontend type
+// ── Map backend title to frontend type ───────────────────────────────
 const getNotificationType = (notification) => {
-  if (notification.title?.toLowerCase().includes('new job')) return 'NEW_REQUEST';
-  if (notification.title?.toLowerCase().includes('accepted'))  return 'JOB_ACCEPTED';
-  if (notification.title?.toLowerCase().includes('completed')) return 'JOB_COMPLETED';
+  const title = notification.title?.toLowerCase() || '';
+  if (title.includes('new job')) return 'NEW_REQUEST';
+  if (title.includes('accepted')) return 'JOB_ACCEPTED';
+  if (title.includes('completed')) return 'JOB_COMPLETED';
   return 'SYSTEM';
 };
 
+const getTypeStyle = (type) =>
+  NOTIFICATION_TYPES[type] || NOTIFICATION_TYPES.SYSTEM;
+
+// ── Main Component ────────────────────────────────────────────────────
 const Notifications = () => {
-  const user = useAppSelector((state) => state.auth.user);
+  const {
+    loading,
+    error,
+    activeFilter,
+    setActiveFilter,
+    selectedNotification,
+    setSelectedNotification,
+    unreadCount,
+    filteredNotifications,
+    notifications,
+    fetchNotifications,
+    markAsRead,
+    markAsUnread,
+    markAllAsRead,
+    deleteNotification,
+    clearAll,
+  } = useNotifications();
 
-  const [notifications, setNotifications]         = useState([]);
-  const [loading, setLoading]                     = useState(true);
-  const [error, setError]                         = useState(null);
-  const [activeFilter, setActiveFilter]           = useState('all');
-  const [selectedNotification, setSelectedNotification] = useState(null);
-
-  // ── Fetch notifications from backend ──────────────────────────────────
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await notificationAPI.getAll();
-      const data = res.data?.data || [];
-      setNotifications(data);
-    } catch (err) {
-      setError('Failed to load notifications');
-      console.error('Fetch notifications error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-
-    // auto refresh every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // ── Counts ────────────────────────────────────────────────────────────
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
-  );
-
-  // ── Filter ────────────────────────────────────────────────────────────
-  const filteredNotifications = useMemo(() => {
-    if (activeFilter === 'unread') return notifications.filter((n) => !n.read);
-    if (activeFilter === 'read')   return notifications.filter((n) =>  n.read);
-    return notifications;
-  }, [notifications, activeFilter]);
-
-  // ── Mark as Read ──────────────────────────────────────────────────────
-  const markAsRead = async (id) => {
-    try {
-      await notificationAPI.markAsRead(id);
-      // update local state immediately
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
-      setSelectedNotification((prev) =>
-        prev?.id === id ? { ...prev, read: true } : prev
-      );
-    } catch (err) {
-      console.error('Mark as read error:', err);
-    }
-  };
-
-  // ── Mark as Unread (local only — no backend endpoint needed) ──────────
-  const markAsUnread = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: false } : n))
-    );
-    setSelectedNotification((prev) =>
-      prev?.id === id ? { ...prev, read: false } : prev
-    );
-  };
-
-  // ── Mark All as Read ──────────────────────────────────────────────────
-  const markAllAsRead = async () => {
-    try {
-      await notificationAPI.markAllAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    } catch (err) {
-      console.error('Mark all as read error:', err);
-    }
-  };
-
-  // ── Delete one notification ───────────────────────────────────────────
-  const deleteNotification = async (id) => {
-    try {
-      await notificationAPI.delete(id);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      if (selectedNotification?.id === id) setSelectedNotification(null);
-    } catch (err) {
-      console.error('Delete notification error:', err);
-    }
-  };
-
-  // ── Clear all notifications ───────────────────────────────────────────
-  const clearAll = async () => {
-    try {
-      await notificationAPI.clearAll();
-      setNotifications([]);
-      setSelectedNotification(null);
-    } catch (err) {
-      console.error('Clear all error:', err);
-    }
-  };
-
-  const getTypeStyle = (type) =>
-    NOTIFICATION_TYPES[type] || NOTIFICATION_TYPES.SYSTEM;
-
-  // ── Detail Panel ──────────────────────────────────────────────────────
+  // ── Detail Panel ──────────────────────────────────────────────────
   const DetailPanel = () => {
     if (!selectedNotification) return null;
-    const n     = selectedNotification;
-    const type  = getNotificationType(n);
+    const n = selectedNotification;
+    const type = getNotificationType(n);
     const style = getTypeStyle(type);
 
     return (
@@ -196,12 +99,13 @@ const Notifications = () => {
         />
 
         {/* Panel */}
-        <div className="fixed inset-x-0 bottom-0 z-50 lg:static lg:z-auto lg:inset-auto
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 lg:static lg:z-auto
           bg-white lg:bg-slate-50/50 rounded-t-2xl lg:rounded-2xl
           border border-slate-100 shadow-2xl lg:shadow-sm
           max-h-[80vh] lg:max-h-none
-          animate-[slideUp_0.3s_ease-out] lg:animate-none">
-
+          animate-[slideUp_0.3s_ease-out] lg:animate-none"
+        >
           {/* Mobile drag handle */}
           <div className="lg:hidden flex justify-center pt-3 pb-1">
             <div className="w-10 h-1 rounded-full bg-slate-200" />
@@ -210,7 +114,9 @@ const Notifications = () => {
           {/* Header */}
           <div className="flex items-start justify-between gap-3 p-4 sm:p-5 border-b border-slate-100">
             <div className="flex items-start gap-3 min-w-0">
-              <div className={`shrink-0 p-2.5 rounded-xl ${style.bg} ${style.text}`}>
+              <div
+                className={`shrink-0 p-2.5 rounded-xl ${style.bg} ${style.text}`}
+              >
                 <span className="material-symbols-outlined text-[22px]">
                   {style.icon}
                 </span>
@@ -228,7 +134,9 @@ const Notifications = () => {
               onClick={() => setSelectedNotification(null)}
               className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
             >
-              <span className="material-symbols-outlined text-[20px]">close</span>
+              <span className="material-symbols-outlined text-[20px]">
+                close
+              </span>
             </button>
           </div>
 
@@ -243,7 +151,10 @@ const Notifications = () => {
                 <span className="material-symbols-outlined text-[16px]">
                   category
                 </span>
-                Category: <span className="font-semibold text-slate-700">{n.category}</span>
+                Category:{' '}
+                <span className="font-semibold text-slate-700">
+                  {n.category}
+                </span>
               </div>
             )}
 
@@ -252,7 +163,10 @@ const Notifications = () => {
                 <span className="material-symbols-outlined text-[16px]">
                   location_on
                 </span>
-                Location: <span className="font-semibold text-slate-700">{n.location}</span>
+                Location:{' '}
+                <span className="font-semibold text-slate-700">
+                  {n.location}
+                </span>
               </div>
             )}
 
@@ -273,7 +187,9 @@ const Notifications = () => {
                   onClick={() => markAsRead(n.id)}
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#004ac6] to-[#57dffe] rounded-lg hover:shadow-md transition-all"
                 >
-                  <span className="material-symbols-outlined text-[16px]">done</span>
+                  <span className="material-symbols-outlined text-[16px]">
+                    done
+                  </span>
                   Mark as Read
                 </button>
               )}
@@ -282,7 +198,9 @@ const Notifications = () => {
                 onClick={() => deleteNotification(n.id)}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-all ml-auto"
               >
-                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span className="material-symbols-outlined text-[16px]">
+                  delete
+                </span>
                 Delete
               </button>
             </div>
@@ -292,7 +210,7 @@ const Notifications = () => {
     );
   };
 
-  // ── Loading State ─────────────────────────────────────────────────────
+  // ── Loading State ─────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -304,7 +222,7 @@ const Notifications = () => {
     );
   }
 
-  // ── Error State ───────────────────────────────────────────────────────
+  // ── Error State ───────────────────────────────────────────────────
   if (error) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -324,10 +242,9 @@ const Notifications = () => {
     );
   }
 
-  // ── Main Render ───────────────────────────────────────────────────────
+  // ── Main Render ───────────────────────────────────────────────────
   return (
     <div className="space-y-4 sm:space-y-6">
-
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -347,17 +264,20 @@ const Notifications = () => {
               onClick={markAllAsRead}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold text-[#004ac6] bg-[#004ac6]/5 hover:bg-[#004ac6]/10 border border-[#004ac6]/15 rounded-lg transition-all"
             >
-              <span className="material-symbols-outlined text-[16px]">done_all</span>
+              <span className="material-symbols-outlined text-[16px]">
+                done_all
+              </span>
               Mark All as Read
             </button>
           )}
-
           {notifications.length > 0 && (
             <button
               onClick={clearAll}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-all"
             >
-              <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
+              <span className="material-symbols-outlined text-[16px]">
+                delete_sweep
+              </span>
               Clear All
             </button>
           )}
@@ -368,9 +288,11 @@ const Notifications = () => {
       <div className="flex items-center gap-1.5 bg-white rounded-xl p-1.5 border border-slate-100 shadow-sm w-fit">
         {FILTER_TABS.map((tab) => {
           const count =
-            tab.key === 'all'    ? notifications.length :
-            tab.key === 'unread' ? unreadCount :
-            notifications.length - unreadCount;
+            tab.key === 'all'
+              ? notifications.length
+              : tab.key === 'unread'
+                ? unreadCount
+                : notifications.length - unreadCount;
           const isActive = activeFilter === tab.key;
 
           return (
@@ -384,9 +306,13 @@ const Notifications = () => {
               }`}
             >
               {tab.label}
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-100 text-slate-500'
+                }`}
+              >
                 {count}
               </span>
             </button>
@@ -396,20 +322,23 @@ const Notifications = () => {
 
       {/* Content */}
       <div className="flex gap-4 sm:gap-6">
-
         {/* Notification List */}
         <div className="flex-1 min-w-0">
           {filteredNotifications.length === 0 ? (
             <div className="text-center py-12 sm:py-16 bg-white rounded-2xl border border-slate-100">
               <div className="inline-flex p-4 rounded-2xl bg-slate-50 mb-4">
                 <span className="material-symbols-outlined text-[40px] text-slate-300">
-                  {activeFilter === 'unread' ? 'mark_email_read' : 'notifications_off'}
+                  {activeFilter === 'unread'
+                    ? 'mark_email_read'
+                    : 'notifications_off'}
                 </span>
               </div>
               <p className="font-bold text-slate-600 text-sm sm:text-base">
-                {activeFilter === 'unread' ? 'No unread notifications' :
-                 activeFilter === 'read'   ? 'No read notifications'   :
-                 'No notifications yet'}
+                {activeFilter === 'unread'
+                  ? 'No unread notifications'
+                  : activeFilter === 'read'
+                    ? 'No read notifications'
+                    : 'No notifications yet'}
               </p>
               <p className="text-xs text-slate-400 mt-1">
                 {activeFilter === 'unread'
@@ -420,14 +349,17 @@ const Notifications = () => {
           ) : (
             <div className="space-y-2">
               {filteredNotifications.map((notification) => {
-                const type    = getNotificationType(notification);
-                const style   = getTypeStyle(type);
-                const isSelected = selectedNotification?.id === notification.id;
+                const type = getNotificationType(notification);
+                const style = getTypeStyle(type);
+                const isSelected =
+                  selectedNotification?.id === notification.id;
 
                 return (
                   <div
                     key={notification.id}
-                    onClick={() => setSelectedNotification(isSelected ? null : notification)}
+                    onClick={() =>
+                      setSelectedNotification(isSelected ? null : notification)
+                    }
                     className={`
                       group relative flex items-start gap-3 sm:gap-4 p-3 sm:p-4
                       rounded-xl sm:rounded-2xl border cursor-pointer
@@ -435,8 +367,8 @@ const Notifications = () => {
                       ${isSelected
                         ? 'bg-[#004ac6]/[0.03] border-[#004ac6]/20 shadow-sm'
                         : notification.read
-                        ? 'bg-white border-slate-100/80 hover:border-slate-200 hover:shadow-sm'
-                        : 'bg-white border-blue-100/60 hover:border-blue-200/80 hover:shadow-sm'}
+                          ? 'bg-white border-slate-100/80 hover:border-slate-200 hover:shadow-sm'
+                          : 'bg-white border-blue-100/60 hover:border-blue-200/80 hover:shadow-sm'}
                     `}
                   >
                     {/* Unread dot */}
@@ -445,7 +377,9 @@ const Notifications = () => {
                     )}
 
                     {/* Icon */}
-                    <div className={`shrink-0 p-2 sm:p-2.5 rounded-lg sm:rounded-xl ${style.bg} ${style.text} mt-0.5`}>
+                    <div
+                      className={`shrink-0 p-2 sm:p-2.5 rounded-lg sm:rounded-xl ${style.bg} ${style.text} mt-0.5`}
+                    >
                       <span className="material-symbols-outlined text-[18px] sm:text-[20px]">
                         {style.icon}
                       </span>
@@ -454,11 +388,13 @@ const Notifications = () => {
                     {/* Content */}
                     <div className="flex-1 min-w-0 ml-2 sm:ml-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className={`text-[13px] sm:text-sm leading-snug line-clamp-1 ${
-                          notification.read
-                            ? 'font-medium text-slate-600'
-                            : 'font-bold text-slate-800'
-                        }`}>
+                        <h4
+                          className={`text-[13px] sm:text-sm leading-snug line-clamp-1 ${
+                            notification.read
+                              ? 'font-medium text-slate-600'
+                              : 'font-bold text-slate-800'
+                          }`}
+                        >
                           {notification.title}
                         </h4>
                         <span className="shrink-0 text-[10px] sm:text-xs text-slate-400 whitespace-nowrap mt-0.5">
@@ -479,27 +415,42 @@ const Notifications = () => {
                     <div className="hidden sm:flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       {notification.read ? (
                         <button
-                          onClick={(e) => { e.stopPropagation(); markAsUnread(notification.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsUnread(notification.id);
+                          }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
                           title="Mark as unread"
                         >
-                          <span className="material-symbols-outlined text-[16px]">mark_email_unread</span>
+                          <span className="material-symbols-outlined text-[16px]">
+                            mark_email_unread
+                          </span>
                         </button>
                       ) : (
                         <button
-                          onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsRead(notification.id);
+                          }}
                           className="p-1.5 rounded-lg text-[#004ac6] hover:bg-[#004ac6]/5 transition-all"
                           title="Mark as read"
                         >
-                          <span className="material-symbols-outlined text-[16px]">done</span>
+                          <span className="material-symbols-outlined text-[16px]">
+                            done
+                          </span>
                         </button>
                       )}
                       <button
-                        onClick={(e) => { e.stopPropagation(); deleteNotification(notification.id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotification(notification.id);
+                        }}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
                         title="Delete"
                       >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                        <span className="material-symbols-outlined text-[16px]">
+                          delete
+                        </span>
                       </button>
                     </div>
 

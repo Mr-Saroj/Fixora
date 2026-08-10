@@ -1,61 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
+import useNotificationPolling from '../hooks/useNotificationPolling';
+import useSidebarResponsive from '../hooks/useSidebarResponsive';
+import {
+  LAYOUT_GLOBAL_CSS,
+  getRootContainerClasses,
+  getContentMarginClasses,
+  getMainContentClasses,
+} from '../utils/layoutUtils';
 
 const TechnicianDashboardLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(
-  window.innerWidth >= 1024
-);
+  const { sidebarOpen, setSidebarOpen } = useSidebarResponsive();
 
-useEffect(() => {
-  const handleResize = () => {
-    if (window.innerWidth >= 1024) {
-      setSidebarOpen(true);
-    } else {
-      setSidebarOpen(false);
-    }
-  };
-
-  handleResize();
-
-  window.addEventListener("resize", handleResize);
-
-  return () => window.removeEventListener("resize", handleResize);
-}, []);
+  useNotificationPolling();
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-800 overflow-hidden font-sans">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
-      
-      <div
-        className={`flex-1 flex flex-col relative transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          sidebarOpen ? 'lg:ml-72' : 'lg:ml-0'
-        }`}
-      >
-        <TopNavbar
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-        />
-        
-        {/* Routed page content renders here */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+    <div className={getRootContainerClasses()}>
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+
+      <div className={getContentMarginClasses(sidebarOpen)}>
+        <TopNavbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+
+        <main className={getMainContentClasses()}>
           <Outlet />
         </main>
       </div>
 
-      <style>{`
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e0e3e5; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-      `}</style>
+      <style>{LAYOUT_GLOBAL_CSS}</style>
     </div>
   );
 };
