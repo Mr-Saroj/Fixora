@@ -1,6 +1,8 @@
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import PageLoader from "../components/common/PageLoader";
+import DashboardLayout from "../components/layout/DashboardLayout";
+import CustomerDashboardLayout from "../features/customer/components/CustomerDashboard";
 
 // --- Lazy Page Imports ---
 const PublicLayout = lazy(() => import("../components/layout/PublicLayout"));
@@ -9,9 +11,9 @@ const Login = lazy(() => import("../features/auth/pages/Login"));
 const Register = lazy(() => import("../features/auth/pages/Register"));
 const ForgotPassword = lazy(() => import("../features/auth/pages/ForgotPassword"));
 
-const DashboardLayout = lazy(() =>
-  import("../features/customer/components/DashboardLayout")
-);
+// const DashboardLayout = lazy(() =>
+//   import("../features/customer/components/DashboardLayout")
+// );
 const TechnicianDashboardLayout = lazy(() =>
   import("../features/Technician/components/TechnicianDashboardLayout")
 );
@@ -64,7 +66,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/customer-dashboard",
-    element: withSuspense(DashboardLayout),
+    element: withSuspense(CustomerDashboardLayout),
     children: [
       { index: true, element: withSuspense(MiddleContent) },
       { path: "requests", element: withSuspense(Request) },

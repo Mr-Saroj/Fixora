@@ -274,9 +274,8 @@ const RequestForm = ({
             {/* Upload Area */}
             <div
               onClick={() => !isSubmitting && fileInputRef.current?.click()}
-              className={`border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center transition-all duration-200 group ${
-                isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-[#004ac6]/40 hover:bg-[#004ac6]/[0.02]'
-              }`}
+              className={`border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center transition-all duration-200 group ${isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-[#004ac6]/40 hover:bg-[#004ac6]/[0.02]'
+                }`}
             >
               <div className="w-16 h-16 mx-auto mb-4 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 group-hover:bg-[#004ac6]/5 group-hover:border-[#004ac6]/20 transition-all duration-200">
                 <span className="material-symbols-outlined text-slate-300 text-[32px] group-hover:text-[#004ac6] transition-colors duration-200">cloud_upload</span>
@@ -333,9 +332,8 @@ const RequestForm = ({
                 {uploadedPhotos.length < 5 && (
                   <div
                     onClick={() => !isSubmitting && fileInputRef.current?.click()}
-                    className={`aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center transition-all duration-200 ${
-                      isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-[#004ac6]/40 hover:bg-[#004ac6]/[0.02]'
-                    }`}
+                    className={`aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center transition-all duration-200 ${isSubmitting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-[#004ac6]/40 hover:bg-[#004ac6]/[0.02]'
+                      }`}
                   >
                     <span className="material-symbols-outlined text-slate-300 text-[24px]">add</span>
                     <span className="text-[10px] text-slate-400 mt-0.5">Add</span>

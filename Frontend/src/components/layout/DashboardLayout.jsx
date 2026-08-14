@@ -1,8 +1,9 @@
+// src/components/layout/DashboardLayout.jsx
+
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import TopNavbar from './TopNavbar';
 import useSidebarResponsive from '../hooks/useSidebarResponsive';
+import useNotificationPolling from '../../features/technician/hooks/useNotificationPolling'; // adjust path to your actual location
 import {
   LAYOUT_GLOBAL_CSS,
   getRootContainerClasses,
@@ -10,18 +11,29 @@ import {
   getMainContentClasses,
 } from '../utils/layoutUtils';
 
-const DashboardLayout = () => {
+// ✅ NO Sidebar or TopNavbar imports here
+
+const DashboardLayout = ({ SidebarComponent, TopNavbarComponent }) => {
   const { sidebarOpen, setSidebarOpen } = useSidebarResponsive();
+
+  // Fires once when the dashboard mounts (any role), then polls on an
+  // interval. Dispatches setUnreadCount to Redux, which both the
+  // Sidebar badge and TopNavbar bell read from.
+  useNotificationPolling();
 
   return (
     <div className={getRootContainerClasses()}>
-      <Sidebar
+
+      {/* ✅ Uses prop — not hardcoded Sidebar */}
+      <SidebarComponent
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
 
       <div className={getContentMarginClasses(sidebarOpen)}>
-        <TopNavbar
+
+        {/* ✅ Uses prop — not hardcoded TopNavbar */}
+        <TopNavbarComponent
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />
@@ -29,6 +41,7 @@ const DashboardLayout = () => {
         <main className={getMainContentClasses()}>
           <Outlet />
         </main>
+
       </div>
 
       <style>{LAYOUT_GLOBAL_CSS}</style>

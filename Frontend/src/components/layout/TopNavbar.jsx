@@ -1,27 +1,28 @@
 import React from 'react';
-import useCustomerTopNavbar from '../hooks/useCustomerTopNavbar';
+import { useAppSelector } from '../../redux/hooks'; // adjust path to match your project structure
+import useTopNavbar from '../hooks/useTopNavbar';
 import {
   getHeaderClasses,
   getHamburgerButtonClasses,
   getHamburgerIconClasses,
   getSearchContainerClasses,
   getActionButtonClasses,
-  getBookServiceClasses,
   getAvatarClasses,
-} from '../utils/customerTopNavbarUtils';
+} from '../utils/topNavbarUtils';
 
-const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
+const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
   const {
     initials,
     avatarTitle,
     greeting,
-    subtitle,
     toggleSidebar,
-  } = useCustomerTopNavbar(sidebarOpen, setSidebarOpen);
+  } = useTopNavbar(sidebarOpen, setSidebarOpen);
+
+  const unreadCount = useAppSelector((state) => state.Notification.unreadCount);
 
   return (
     <header className={getHeaderClasses()}>
-      
+
       {/* Left: Hamburger + Greeting */}
       <div className="flex items-center gap-3 md:gap-4">
         <button
@@ -38,16 +39,18 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
           <h1 className="text-lg lg:text-xl font-bold text-slate-800">
             {greeting}
           </h1>
-          <p className="hidden lg:block text-sm text-slate-400">
-            {subtitle}
-          </p>
+          {subtitle && (
+            <p className="hidden lg:block text-sm text-slate-400">
+              {subtitle}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2 md:gap-4">
-        
-        {/* Search — xl+ only */}
+
+        {/* Search */}
         <div className={getSearchContainerClasses()}>
           <span className="material-symbols-outlined text-slate-400 text-[20px] mr-2">
             search
@@ -59,23 +62,21 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen }) => {
           />
         </div>
 
-        {/* Notification Bell */}
-        <button className={getActionButtonClasses()}>
+        {/* Notification Bell — driven by Redux, not local/static state */}
+        <button className={`relative ${getActionButtonClasses()}`}>
           <span className="material-symbols-outlined text-[22px]">notifications</span>
-          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-white">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
 
-        {/* Book Service — md+ only */}
-        <button className={getBookServiceClasses()}>
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Book Service
-        </button>
+        {/* Role-specific action button injected from outside */}
+        {actionButton}
 
         {/* Avatar */}
-        <div
-          title={avatarTitle}
-          className={getAvatarClasses()}
-        >
+        <div title={avatarTitle} className={getAvatarClasses()}>
           {initials}
         </div>
       </div>

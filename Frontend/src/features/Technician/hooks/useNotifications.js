@@ -1,12 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '../../../redux/hooks';
-import { setUnreadCount } from '../../../redux/slices/notificationSlice'; // adjust path
+import { useAppSelector } from '../../../redux/hooks';
 import useWebSocket from './useWebSocket';
+import useNotificationPolling from './useNotificationPolling';
 import * as notificationService from '../services/notificationService';
 
 const useNotifications = () => {
   const user = useAppSelector((state) => state.auth.user);
-  const dispatch = useAppDispatch();
+
+  // Single source of truth for the global Redux unread count.
+  // refetch() re-syncs Redux from the server after any mutation below.
+  const { refetch: refetchUnreadCount } = useNotificationPolling();
 
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +24,9 @@ const useNotifications = () => {
       if (exists) return prev;
       return [newNotification, ...prev];
     });
+
+    // A new notification arrived over the socket -> resync the global count too
+    refetchUnreadCount();
 
     if (
       typeof window !== 'undefined' &&
@@ -64,16 +70,11 @@ const useNotifications = () => {
     fetchNotifications();
   }, []);
 
-  // ── Counts ────────────────────────────────────────────────────────
+  // ── Local counts (for this page's UI only — NOT dispatched to Redux) ──
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   );
-
-  // 🔑 Whenever local unreadCount changes, sync it to Redux
-  useEffect(() => {
-    dispatch(setUnreadCount(unreadCount));
-  }, [unreadCount, dispatch]);
 
   const filteredNotifications = useMemo(() => {
     if (activeFilter === 'unread') return notifications.filter((n) => !n.read);
@@ -90,24 +91,27 @@ const useNotifications = () => {
       setSelectedNotification((prev) =>
         prev?.id === id ? { ...prev, read: true } : prev
       );
+      refetchUnreadCount();
     } catch (err) {
       console.error('Mark as read error:', err);
     }
   };
 
-  const markAsUnread = (id) => {
+  const markAsUnread = async (id) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: false } : n))
     );
     setSelectedNotification((prev) =>
       prev?.id === id ? { ...prev, read: false } : prev
     );
+    refetchUnreadCount();
   };
 
   const markAllAsReadHandler = async () => {
     try {
       await notificationService.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      refetchUnreadCount();
     } catch (err) {
       console.error('Mark all as read error:', err);
     }
@@ -118,6 +122,7 @@ const useNotifications = () => {
       await notificationService.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       if (selectedNotification?.id === id) setSelectedNotification(null);
+      refetchUnreadCount();
     } catch (err) {
       console.error('Delete notification error:', err);
     }
@@ -128,6 +133,7 @@ const useNotifications = () => {
       await notificationService.clearAllNotifications();
       setNotifications([]);
       setSelectedNotification(null);
+      refetchUnreadCount();
     } catch (err) {
       console.error('Clear all error:', err);
     }
