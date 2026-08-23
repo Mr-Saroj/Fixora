@@ -1,8 +1,13 @@
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import PageLoader from "../components/common/PageLoader";
-import DashboardLayout from "../components/layout/DashboardLayout";
 import CustomerDashboardLayout from "../features/customer/components/CustomerDashboard";
+import AnnouncementsPage from "../features/Admin/pages/AnnouncementsPage";
+import TechnicianListPage from "../features/Admin/pages/TechnicianListPage";
+import UserQueriesPage from "../features/Admin/pages/UserQueriesPage";
+import TechnicianLoginApproval from "../features/Admin/pages/TechnicianLoginApproval";
+import CustomerNotifications from "../features/customer/pages/CustomerNotifications";
+import AdminMiddleContent from "../features/Admin/components/AdminMiddleContent";
 
 // --- Lazy Page Imports ---
 const PublicLayout = lazy(() => import("../components/layout/PublicLayout"));
@@ -11,11 +16,13 @@ const Login = lazy(() => import("../features/auth/pages/Login"));
 const Register = lazy(() => import("../features/auth/pages/Register"));
 const ForgotPassword = lazy(() => import("../features/auth/pages/ForgotPassword"));
 
-// const DashboardLayout = lazy(() =>
-//   import("../features/customer/components/DashboardLayout")
-// );
 const TechnicianDashboardLayout = lazy(() =>
   import("../features/Technician/components/TechnicianDashboardLayout")
+);
+
+// Admin lazy pages
+const AdminDashboardLayout = lazy(() =>
+  import("../features/Admin/components/AdminDashboardLayout")
 );
 
 // Customer lazy pages
@@ -43,7 +50,6 @@ const Notifications = lazy(() =>
   import("../features/Technician/pages/Notifications")
 );
 
-// ⬇️ ADD THIS: Lazy import for the 404 Page
 const NotFound = lazy(() => import("../components/common/NotFound"));
 
 // --- Suspense Wrapper ---
@@ -71,6 +77,7 @@ export const router = createBrowserRouter([
       { index: true, element: withSuspense(MiddleContent) },
       { path: "requests", element: withSuspense(Request) },
       { path: "history", element: withSuspense(RequestHistory) },
+      { path: "messages", element: withSuspense(CustomerNotifications) },
     ],
   },
   {
@@ -83,10 +90,21 @@ export const router = createBrowserRouter([
       { path: "notifications", element: withSuspense(Notifications) },
     ],
   },
-  
-  // ⬇️ ADD THIS: Catch-all 404 Route (Must be at the very bottom)
+  {
+    path: "/admin-dashboard",
+    element: withSuspense(AdminDashboardLayout),
+    children: [
+      { index: true, element: withSuspense(AdminMiddleContent) },
+      { path: "announcements", element: withSuspense(AnnouncementsPage) },
+      { path: "technicians", element: withSuspense(TechnicianListPage) },
+      { path: "technician-approvals", element: withSuspense(TechnicianLoginApproval) },
+      { path: "user-queries", element: withSuspense(UserQueriesPage) },
+    ],
+  },
+
+  // Catch-all 404 (must be last)
   {
     path: "*",
     element: withSuspense(NotFound),
-  }
+  },
 ]);

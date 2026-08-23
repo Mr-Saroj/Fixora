@@ -5,6 +5,9 @@ import Particles from './components/Particles';
 // Global Layout Components
 
 
+// 1. Import your AIAssistant component (Update the path to match where you saved it)
+
+
 // Section Imports
 import Hero from './sections/Hero/Hero';
 import Services from './sections/Services/Services';
@@ -19,9 +22,7 @@ import Contact from './sections/Contact/Contact';
 import CTA from './sections/CTA/CTA';
 
 import './Home.css';
-import Navbar from '../../components/layout/Navbar';
-import Footer from '../../components/layout/Footer';
-
+import AIAssistant from './sections/Assistant/AIAssistant';
 
 const Home = () => {
   // Initialize Global Scroll & Card Reveal Animations
@@ -53,6 +54,9 @@ const Home = () => {
 
       {/* Bottom Footer */}
       {/* <Footer /> */}
+
+      {/* 2. Add the AI Assistant right before the closing div */}
+      <AIAssistant />
 
     </div>
   );

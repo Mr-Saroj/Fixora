@@ -4,6 +4,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.annotation.Id;
 
+import com.saroj.fixora.model.enums.LoginAccess;
 import com.saroj.fixora.model.enums.Role;
 import com.saroj.fixora.model.enums.TechnicianType;
 
@@ -27,7 +28,26 @@ public class User {
     private String district;
     private String city;
     private String pinCode;
-    private LocalDate subscriptionEndDate; // ✅ NEW FIELD
+    private String profilePhotoUrl;
+    private String govtIdPhotoUrl;
+    private LoginAccess loginAccess;
+    public String getProfilePhotoUrl() {
+		return profilePhotoUrl;
+	}
+
+	public void setProfilePhotoUrl(String profilePhotoUrl) {
+		this.profilePhotoUrl = profilePhotoUrl;
+	}
+
+	public String getGovtIdPhotoUrl() {
+		return govtIdPhotoUrl;
+	}
+
+	public void setGovtIdPhotoUrl(String govtIdPhotoUrl) {
+		this.govtIdPhotoUrl = govtIdPhotoUrl;
+	}
+
+	private LocalDate subscriptionEndDate; // ✅ NEW FIELD
 
     // Default Constructor required by MongoDB
     public User() {}
@@ -75,4 +95,7 @@ public class User {
         if (subscriptionEndDate == null) return false;
         return !LocalDate.now().isAfter(subscriptionEndDate);
     }
+    public LoginAccess getLoginAccess() { return loginAccess; }
+    public void setLoginAccess(LoginAccess loginAccess) { this.loginAccess = loginAccess; }
+
 }

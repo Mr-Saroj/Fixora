@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { inputBaseClass } from '../utils/inputStyles';
 import GradientButton from '../../../components/ui/GradientButton';
+import FormInput from '../../../components/ui/FormInput';
 
 
 const LoginForm = () => {
@@ -15,18 +16,20 @@ const LoginForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
-        <label className="block text-[13px] font-bold text-text-main uppercase mb-2">Email Address</label>
-        <input 
-          type="email" 
-          required
-          className={inputBaseClass}
-          placeholder="name@example.com" 
-          value={formData.email}
-          onChange={(e) => setFormData({...formData, email: e.target.value})}
-        />
-      </div>
 
+      <FormInput
+        label="Email Address"
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+        placeholder="name@example.com"
+        required
+      />
+
+      {/* Password keeps a manual label row because of the "Forgot?" link — 
+          FormInput doesn't support a right-aligned label extra. The input 
+          styling still comes from the shared inputBaseClass. */}
       <div>
         <div className="flex justify-between items-center mb-2">
           <label className="block text-[13px] font-bold text-text-main uppercase">Password</label>
@@ -34,17 +37,17 @@ const LoginForm = () => {
             Forgot?
           </a>
         </div>
-        <input 
-          type="password" 
+        <input
+          type="password"
+          name="password"
           required
-          className={inputBaseClass}
-          placeholder="••••••••" 
           value={formData.password}
-          onChange={(e) => setFormData({...formData, password: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          placeholder="••••••••"
+          className={inputBaseClass}
         />
       </div>
 
-      {/* ── Replaced raw <button> with GradientButton ── */}
       <GradientButton
         type="submit"
         size="xl"
@@ -52,9 +55,7 @@ const LoginForm = () => {
         className="w-full mt-2 font-bold text-[16px]"
       >
         {isLoading ? (
-          <span className="material-symbols-outlined animate-spin">
-            progress_activity
-          </span>
+          <span className="material-symbols-outlined animate-spin">progress_activity</span>
         ) : (
           <>
             <span className="material-symbols-outlined text-[20px]">login</span>

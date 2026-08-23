@@ -11,8 +11,22 @@ public class RegisterRequest {
     private String district;
     private String city;
     private String pinCode;
+    private String profilePhotoUrl;
+    private String govtIdPhotoUrl;
 
-    // Getters and Setters
+    public String getProfilePhotoUrl() {
+		return profilePhotoUrl;
+	}
+	public void setProfilePhotoUrl(String profilePhotoUrl) {
+		this.profilePhotoUrl = profilePhotoUrl;
+	}
+	public String getGovtIdPhotoUrl() {
+		return govtIdPhotoUrl;
+	}
+	public void setGovtIdPhotoUrl(String govtIdPhotoUrl) {
+		this.govtIdPhotoUrl = govtIdPhotoUrl;
+	}
+	// Getters and Setters
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 

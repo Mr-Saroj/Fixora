@@ -1,0 +1,291 @@
+/* ── Floating Action Button ── */
+.fixora-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(37,99,235,0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+  z-index: 9999;
+}
+.fixora-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(37,99,235,0.5);
+}
+.fixora-fab:active { transform: scale(0.97); }
+.fixora-fab::before {
+  content: '';
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid rgba(37,99,235,0.4);
+  animation: fixora-pulse 2.4s ease-out infinite;
+}
+@keyframes fixora-pulse {
+  0%   { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+
+/* ── Tooltip ── */
+.fixora-tooltip {
+  position: fixed;
+  bottom: 98px;
+  right: 28px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: #0f172a;
+  font-family: Inter, system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  z-index: 9998;
+  animation: fixora-fadein 0.3s ease both;
+}
+.fixora-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 22px;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  transform: rotate(45deg);
+}
+
+/* ── Chat Panel ── */
+.fixora-panel {
+  position: fixed;
+  bottom: 100px;
+  right: 28px;
+  width: 330px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.14);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9998;
+  font-family: Inter, system-ui, sans-serif;
+  animation: fixora-slideup 0.25s ease both;
+}
+.fixora-panel.open { display: flex; }
+
+@keyframes fixora-slideup {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fixora-fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Header */
+.fixora-header {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #2563EB 0%, #06B6D4 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fixora-header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fixora-header-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.fixora-header-status {
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+.fixora-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  display: inline-block;
+}
+.fixora-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.8);
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
+}
+.fixora-close:hover { color: #fff; }
+
+/* Messages */
+.fixora-messages {
+  padding: 14px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.fixora-msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.fixora-msg-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563EB, #06B6D4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #fff;
+  font-weight: 700;
+}
+.fixora-bubble {
+  max-width: 230px;
+  padding: 9px 12px;
+  border-radius: 14px 14px 14px 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #f1f5f9;
+  color: #0f172a;
+  word-wrap: break-word;
+}
+.fixora-msg.user { justify-content: flex-end; }
+.fixora-msg.user .fixora-bubble {
+  background: linear-gradient(135deg, #2563EB, #06B6D4);
+  color: #fff;
+  border-radius: 14px 14px 2px 14px;
+}
+
+/* Quick replies */
+.fixora-qr {
+  padding: 0 14px 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.fixora-qr-btn {
+  font-size: 12px;
+  padding: 5px 11px;
+  border-radius: 20px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.fixora-qr-btn:hover {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+/* Input row */
+.fixora-input-row {
+  padding: 10px 12px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.fixora-input {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+}
+.fixora-input:focus { border-color: #2563eb; }
+.fixora-send {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563EB, #06B6D4);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.fixora-send:hover { transform: scale(1.1); }
+
+/* ════════════════════════════════════════
+   Mobile Responsiveness (Added at the bottom)
+   ════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Scale down the FAB and move it closer to the corner */
+  .fixora-fab {
+    bottom: 16px;
+    right: 16px;
+    width: 52px;
+    height: 52px;
+  }
+  
+  .fixora-fab::before {
+    width: 52px;
+    height: 52px;
+  }
+
+  /* Shrink the inner SVG logo slightly for the smaller button */
+  .fixora-fab svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Adjust Tooltip position relative to the new FAB size */
+  .fixora-tooltip {
+    bottom: 80px;
+    right: 16px;
+  }
+
+  /* Make the chat panel fluid and centered on small screens */
+  .fixora-panel {
+    bottom: 80px;
+    right: 16px;
+    left: 16px;
+    width: auto; /* Overrides the 330px fixed width */
+    max-width: 400px; /* Prevents it from getting too wide on tablets */
+  }
+
+  /* Slightly reduce message area height on very small screens */
+  .fixora-messages {
+    min-height: 150px;
+    max-height: 220px;
+  }
+}

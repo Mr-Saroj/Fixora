@@ -4,7 +4,6 @@ export const TECHNICIAN_NAV_LINKS = [
   { id: 'dashboard',         icon: 'dashboard',     label: 'Dashboard',         to: '/technician-dashboard',                   end: true },
   { id: 'customer-requests', icon: 'inbox',         label: 'Customer Requests', to: '/technician-dashboard/customer-requests'           },
   { id: 'accepted-requests', icon: 'task_alt',      label: 'Accepted Requests', to: '/technician-dashboard/accepted-requests'           },
-  { id: 'messages',          icon: 'chat_bubble',   label: 'Messages',          to: '/technician-dashboard/messages'                     },
   { id: 'notifications',     icon: 'notifications', label: 'Notifications',     to: '/technician-dashboard/notifications'                },
   { id: 'settings',          icon: 'settings',      label: 'Settings',          to: '/technician-dashboard/settings'                     },
 ];

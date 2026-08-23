@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { isMobileView, DESKTOP_BREAKPOINT } from '../utils/sidebarUtils';
+import { isMobileView, DESKTOP_BREAKPOINT } from '../components/utils/sidebarUtils';
 
 const useSidebar = (setSidebarOpen) => {
   const handleMobileClose = useCallback(() => {

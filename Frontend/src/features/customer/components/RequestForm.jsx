@@ -1,4 +1,5 @@
 import React from 'react';
+import GradientButton from '../../../components/ui/GradientButton';
 
 const RequestForm = ({
   formData,
@@ -364,16 +365,17 @@ const RequestForm = ({
             <span className="material-symbols-outlined text-[18px]">restart_alt</span>
             Clear Form
           </button>
-          <button
+          <GradientButton
             type="submit"
+            size="large"
             disabled={isSubmitting}
-            className="px-8 py-3 rounded-xl bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white font-bold text-sm shadow-[0_10px_20px_-5px_rgba(0,74,198,0.3)] hover:shadow-[0_15px_30px_-5px_rgba(0,74,198,0.5)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 min-w-[200px] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            className="min-w-[200px]"
           >
-            <span className={`material-symbols-outlined text-[18px] ${isSubmitting ? 'animate-spin' : ''}`}>
+            <span className={`material-symbols-outlined text-[18px] mr-2 ${isSubmitting ? 'animate-spin' : ''}`}>
               {isSubmitting ? 'progress_activity' : 'send'}
             </span>
             {isSubmitting ? 'Submitting...' : 'Submit Request'}
-          </button>
+          </GradientButton>
         </div>
       </form>
     </main>

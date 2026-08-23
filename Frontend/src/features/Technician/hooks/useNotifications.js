@@ -3,6 +3,7 @@ import { useAppSelector } from '../../../redux/hooks';
 import useWebSocket from './useWebSocket';
 import useNotificationPolling from './useNotificationPolling';
 import * as notificationService from '../services/notificationService';
+import * as announcementService from '../services/announcementService'; // ✅ NEW
 
 const useNotifications = () => {
   const user = useAppSelector((state) => state.auth.user);
@@ -12,6 +13,7 @@ const useNotifications = () => {
   const { refetch: refetchUnreadCount } = useNotificationPolling();
 
   const [notifications, setNotifications] = useState([]);
+  const [announcements, setAnnouncements] = useState([]); // ✅ NEW
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -55,9 +57,15 @@ const useNotifications = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await notificationService.getNotifications();
-      const data = res.data?.data || [];
-      setNotifications(data);
+
+      // ✅ NEW — fetch both in parallel
+      const [notifRes, annRes] = await Promise.all([
+        notificationService.getNotifications(),
+        announcementService.getAnnouncements(),
+      ]);
+
+      setNotifications(notifRes.data?.data || []);
+      setAnnouncements(annRes.data?.data || []); // ✅ NEW
     } catch (err) {
       setError('Failed to load notifications');
       console.error('Fetch notifications error:', err);
@@ -70,19 +78,31 @@ const useNotifications = () => {
     fetchNotifications();
   }, []);
 
+  // ✅ NEW — merge personal notifications + admin announcements into one list
+  const combined = useMemo(() => {
+    const tagged = notifications.map((n) => ({ ...n, type: 'PERSONAL' }));
+    const taggedAnn = announcements.map((a) => ({ ...a, read: true, type: 'ANNOUNCEMENT' }));
+    return [...tagged, ...taggedAnn].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+  }, [notifications, announcements]);
+
   // ── Local counts (for this page's UI only — NOT dispatched to Redux) ──
   const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
+    () => combined.filter((n) => !n.read).length, // ✅ CHANGED: notifications -> combined
+    [combined]
   );
 
   const filteredNotifications = useMemo(() => {
-    if (activeFilter === 'unread') return notifications.filter((n) => !n.read);
-    if (activeFilter === 'read') return notifications.filter((n) => n.read);
-    return notifications;
-  }, [notifications, activeFilter]);
+    if (activeFilter === 'unread') return combined.filter((n) => !n.read); // ✅ CHANGED
+    if (activeFilter === 'read') return combined.filter((n) => n.read);     // ✅ CHANGED
+    return combined; // ✅ CHANGED
+  }, [combined, activeFilter]);
 
   const markAsRead = async (id) => {
+    const target = combined.find((n) => n.id === id); // ✅ NEW guard
+    if (target?.type === 'ANNOUNCEMENT') return;        // ✅ NEW guard
+
     try {
       await notificationService.markAsRead(id);
       setNotifications((prev) =>
@@ -98,6 +118,9 @@ const useNotifications = () => {
   };
 
   const markAsUnread = async (id) => {
+    const target = combined.find((n) => n.id === id); // ✅ NEW guard
+    if (target?.type === 'ANNOUNCEMENT') return;        // ✅ NEW guard
+
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: false } : n))
     );
@@ -118,6 +141,9 @@ const useNotifications = () => {
   };
 
   const deleteNotificationHandler = async (id) => {
+    const target = combined.find((n) => n.id === id); // ✅ NEW guard
+    if (target?.type === 'ANNOUNCEMENT') return;        // ✅ NEW guard
+
     try {
       await notificationService.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -131,7 +157,7 @@ const useNotifications = () => {
   const clearAll = async () => {
     try {
       await notificationService.clearAllNotifications();
-      setNotifications([]);
+      setNotifications([]); // announcements stay — clearAll only clears personal
       setSelectedNotification(null);
       refetchUnreadCount();
     } catch (err) {
@@ -140,7 +166,7 @@ const useNotifications = () => {
   };
 
   return {
-    notifications,
+    notifications: combined, // ✅ CHANGED: was `notifications`
     loading,
     error,
     activeFilter,

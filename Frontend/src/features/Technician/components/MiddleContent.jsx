@@ -1,6 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTechnicianDashboard, STEPS, getCategoryIcon, formatDate } from '../hooks/useTechnicianDashboard';
 import SubscriptionCard from './SubscriptionCard';
+import GradientButton from '../../../components/ui/GradientButton';
 
 const MiddleContent = () => {
   const {
@@ -163,17 +165,18 @@ const MiddleContent = () => {
                 Advance your progress on this request
               </p>
             </div>
-            <button
+            <GradientButton
+              size="small"
               disabled={currentStepIdx >= STEPS.length - 1 || advancing}
               onClick={advanceCurrentJob}
-              className="shrink-0 px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm hover:shadow-md disabled:opacity-40 disabled:pointer-events-none transition-all"
+              className="!px-3 sm:!px-4 !py-1.5 !text-[11px] sm:!text-xs !rounded-lg !shadow-sm hover:!shadow-md !font-bold"
             >
               {advancing
                 ? 'Updating…'
                 : currentStepIdx === 1
                 ? 'Mark Complete'
                 : 'Advance Status'}
-            </button>
+            </GradientButton>
           </div>
 
           {/* ── Mobile Stepper: compact horizontal ── */}
@@ -204,7 +207,7 @@ const MiddleContent = () => {
                         ${isActive
                           ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] ring-3 ring-[#004ac6]/15 shadow-md shadow-[#004ac6]/30'
                           : isDone
-                          ? 'bg-[#004ac6]'
+                          ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] shadow-sm'
                           : 'bg-slate-200 text-slate-400 shadow-none'
                         }`}
                     >
@@ -227,7 +230,7 @@ const MiddleContent = () => {
             </div>
           </div>
 
-          {/* ── Desktop Stepper: original large horizontal ── */}
+          {/* ── Desktop Stepper: large horizontal ── */}
           <div className="hidden sm:block">
             <div className="relative flex justify-between items-start pt-2">
               {/* Background track */}
@@ -253,12 +256,12 @@ const MiddleContent = () => {
                     }`}
                   >
                     <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center text-white transition-all duration-300 shadow-md
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center text-white transition-all duration-300
                         ${
                           isActive
                             ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 ring-4 ring-[#004ac6]/10 shadow-[0_8px_20px_-4px_rgba(0,74,198,0.4)]'
                             : isDone
-                            ? 'bg-[#004ac6]'
+                            ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] shadow-md'
                             : 'bg-slate-200 text-slate-400 shadow-none'
                         }`}
                     >

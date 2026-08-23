@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppSelector } from '../../redux/hooks'; // adjust path to match your project structure
-import useTopNavbar from '../hooks/useTopNavbar';
+
 import {
   getHeaderClasses,
   getHamburgerButtonClasses,
@@ -8,7 +8,8 @@ import {
   getSearchContainerClasses,
   getActionButtonClasses,
   getAvatarClasses,
-} from '../utils/topNavbarUtils';
+} from '../../utils/topNavbarUtils';
+import useTopNavbar from '../../hooks/useTopNavbar';
 
 const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
   const {

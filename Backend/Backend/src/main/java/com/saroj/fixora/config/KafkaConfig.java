@@ -12,4 +12,8 @@ public class KafkaConfig {
     public NewTopic requestEventsTopic() {
         return new NewTopic("request-events", 1, (short) 1);
     }
+    @Bean
+    public NewTopic announcementEventsTopic() {
+        return new NewTopic("announcement-events", 1, (short) 1);
+    }
 }

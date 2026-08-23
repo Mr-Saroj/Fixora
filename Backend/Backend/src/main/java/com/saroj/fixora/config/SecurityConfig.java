@@ -1,10 +1,10 @@
 package com.saroj.fixora.config;
 
 import com.saroj.fixora.security.JwtAuthFilter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,25 +24,123 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
 
+    // Password encryption
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
+
         http
+
+            // ------------------------------------------------
+            // CSRF
+            // ------------------------------------------------
+            // Disabled because this is a stateless JWT API
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource))
-            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // ------------------------------------------------
+            // CORS
+            // ------------------------------------------------
+            .cors(cors ->
+                cors.configurationSource(corsConfigurationSource)
+            )
+
+            // ------------------------------------------------
+            // SESSION MANAGEMENT
+            // ------------------------------------------------
+            // JWT authentication does not use server sessions
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS
+                )
+            )
+
+            // ------------------------------------------------
+            // AUTHORIZATION
+            // ------------------------------------------------
             .authorizeHttpRequests(auth -> auth
-            	    .requestMatchers("/api/auth/register", "/api/auth/login","/api/auth/forgot-password",   // ← add
-            	    	    "/api/auth/reset-password,","/ws/**","/topic/**","/app/**").permitAll()
-            	    .anyRequest().authenticated()   // ⬅ change from permitAll() to authenticated()
-            	)
-            .httpBasic(basic -> basic.disable())
-            .formLogin(form -> form.disable())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+                // ============================================
+                // PUBLIC ROUTES
+                // ============================================
+
+                .requestMatchers(
+                    "/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/forgot-password",
+                    "/api/auth/reset-password",
+
+                    // Cloudinary signature
+                    "/api/cloudinary/signature",
+
+                    // WebSocket endpoints
+                    "/ws/**",
+                    "/topic/**",
+                    "/app/**"
+                ).permitAll()
+
+
+                // ============================================
+                // ADMIN ROUTES
+                // ============================================
+
+                .requestMatchers("/api/admin/**")
+                .hasRole("ADMIN")
+
+
+                // ============================================
+                // TECHNICIAN ROUTES
+                // ============================================
+
+                .requestMatchers("/api/technician/**")
+                .hasRole("TECHNICIAN")
+
+
+                // ============================================
+                // CUSTOMER ROUTES
+                // ============================================
+
+                .requestMatchers("/api/customer/**")
+                .hasRole("CUSTOMER")
+
+
+                // ============================================
+                // ALL OTHER ROUTES
+                // ============================================
+
+                // Any route not explicitly defined above
+                // requires a valid JWT
+                .anyRequest()
+                .authenticated()
+            )
+
+            // ------------------------------------------------
+            // DISABLE BASIC AUTHENTICATION
+            // ------------------------------------------------
+            .httpBasic(basic ->
+                basic.disable()
+            )
+
+            // ------------------------------------------------
+            // DISABLE FORM LOGIN
+            // ------------------------------------------------
+            .formLogin(form ->
+                form.disable()
+            )
+
+            // ------------------------------------------------
+            // JWT FILTER
+            // ------------------------------------------------
+            // Run JWT authentication before Spring's
+            // UsernamePasswordAuthenticationFilter
+            .addFilterBefore(
+                jwtAuthFilter,
+                UsernamePasswordAuthenticationFilter.class
+            );
 
         return http.build();
     }

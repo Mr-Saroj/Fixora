@@ -1,10 +1,11 @@
 import { useMemo, useCallback } from 'react';
-import { useAppSelector } from '../../redux/hooks';
+
 import {
   getInitials,
   getFirstName,
   getGreetingText,
 } from '../utils/topNavbarUtils';
+import { useAppSelector } from '../redux/hooks';
 
 /**
  * Reusable hook for TopNavbar state and logic

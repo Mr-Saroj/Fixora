@@ -1,4 +1,164 @@
 /* Custom localized styles for the Hero section */
 .hero-glow {
-  background: radial-gradient(circle, rgba(0, 74, 198, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  background: radial-gradient(circle, rgba(0, 74, 198, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HERO ANIMATIONS
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Base fade-up (text content) ── */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade-up {
+  opacity: 0;
+  animation: heroFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── Fade from right (image) ── */
+@keyframes heroFadeRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.hero-fade-right {
+  opacity: 0;
+  animation: heroFadeRight 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── Stagger delays ── */
+.hero-delay-1 { animation-delay: 0.1s; }
+.hero-delay-2 { animation-delay: 0.25s; }
+.hero-delay-3 { animation-delay: 0.4s; }
+.hero-delay-4 { animation-delay: 0.55s; }
+.hero-delay-5 { animation-delay: 0.7s; }
+
+/* ── Background glow drift ── */
+@keyframes glowDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(30px, 20px) scale(1.05); }
+}
+
+@keyframes glowDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-25px, -15px) scale(1.08); }
+}
+
+@keyframes glowDrift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.12; }
+  50%      { transform: translate(15px, -10px) scale(1.1); opacity: 0.18; }
+}
+
+.hero-glow-1 { animation: glowDrift1 12s ease-in-out infinite; }
+.hero-glow-2 { animation: glowDrift2 10s ease-in-out infinite; }
+.hero-glow-3 { animation: glowDrift3 14s ease-in-out infinite; }
+
+/* ── Image wrapper subtle entrance scale ── */
+@keyframes imageReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.hero-image-wrapper {
+  animation: imageReveal 1s cubic-bezier(0.22, 1, 0.36, 1) 0.35s forwards;
+  opacity: 0;
+}
+
+/* ── Floating card ── */
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+.hero-float-card {
+  animation: floatCard 4s ease-in-out infinite;
+}
+
+/* ── Pulse badge ── */
+@keyframes pulseBadge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 74, 198, 0.25); }
+  50%      { box-shadow: 0 0 0 6px rgba(0, 74, 198, 0); }
+}
+
+.hero-pulse-badge {
+  animation: pulseBadge 2.5s ease-in-out infinite;
+}
+
+/* ── Ghost button subtle entrance ── */
+@keyframes ghostFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-ghost-btn {
+  opacity: 0;
+  animation: ghostFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s forwards;
+}
+
+/* ── Avatar stack stagger ── */
+.hero-avatars img,
+.hero-avatars div {
+  opacity: 0;
+  animation: heroFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-avatars img:nth-child(1),
+.hero-avatars div:nth-child(1) { animation-delay: 0.6s; }
+.hero-avatars img:nth-child(2) { animation-delay: 0.7s; }
+.hero-avatars img:nth-child(3) { animation-delay: 0.8s; }
+.hero-avatars div:nth-child(4) { animation-delay: 0.9s; }
+
+/* ── Respect reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-up,
+  .hero-fade-right,
+  .hero-image-wrapper,
+  .hero-ghost-btn,
+  .hero-avatars img,
+  .hero-avatars div {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .hero-glow-1,
+  .hero-glow-2,
+  .hero-glow-3 {
+    animation: none !important;
+  }
+
+  .hero-float-card {
+    animation: none !important;
+  }
+
+  .hero-pulse-badge {
+    animation: none !important;
+  }
 }

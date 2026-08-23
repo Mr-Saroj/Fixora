@@ -1,67 +1,13 @@
 import React from 'react';
 import useNotifications from '../hooks/useNotifications';
-
-// ── Notification type styles ──────────────────────────────────────────
-const NOTIFICATION_TYPES = {
-  NEW_REQUEST: {
-    icon: 'add_circle',
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
-    border: 'border-blue-100',
-  },
-  JOB_ACCEPTED: {
-    icon: 'check_circle',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-600',
-    border: 'border-emerald-100',
-  },
-  JOB_COMPLETED: {
-    icon: 'task_alt',
-    bg: 'bg-indigo-50',
-    text: 'text-indigo-600',
-    border: 'border-indigo-100',
-  },
-  SYSTEM: {
-    icon: 'info',
-    bg: 'bg-slate-100',
-    text: 'text-slate-500',
-    border: 'border-slate-200',
-  },
-};
-
-const FILTER_TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'unread', label: 'Unread' },
-  { key: 'read', label: 'Read' },
-];
-
-// ── Format time ───────────────────────────────────────────────────────
-const formatTime = (createdAt) => {
-  if (!createdAt) return '';
-  const now = new Date();
-  const created = new Date(createdAt);
-  const diffMs = now - created;
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
-
-  if (diffMin < 1) return 'Just now';
-  if (diffMin < 60) return `${diffMin} min ago`;
-  if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
-  return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-};
-
-// ── Map backend title to frontend type ───────────────────────────────
-const getNotificationType = (notification) => {
-  const title = notification.title?.toLowerCase() || '';
-  if (title.includes('new job')) return 'NEW_REQUEST';
-  if (title.includes('accepted')) return 'JOB_ACCEPTED';
-  if (title.includes('completed')) return 'JOB_COMPLETED';
-  return 'SYSTEM';
-};
-
-const getTypeStyle = (type) =>
-  NOTIFICATION_TYPES[type] || NOTIFICATION_TYPES.SYSTEM;
+import GradientButton from '../../../components/ui/GradientButton';
+import {
+  NOTIFICATION_TYPES,
+  FILTER_TABS,
+  formatTime,
+  getNotificationType,
+  getTypeStyle,
+} from '../utils/notificationUtils';
 
 // ── Main Component ────────────────────────────────────────────────────
 const Notifications = () => {
@@ -171,39 +117,42 @@ const Notifications = () => {
             )}
 
             {/* Actions */}
-            <div className="flex flex-wrap gap-2 pt-2">
-              {n.read ? (
-                <button
-                  onClick={() => markAsUnread(n.id)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all"
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    mark_email_unread
-                  </span>
-                  Mark as Unread
-                </button>
-              ) : (
-                <button
-                  onClick={() => markAsRead(n.id)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-[#004ac6] to-[#57dffe] rounded-lg hover:shadow-md transition-all"
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    done
-                  </span>
-                  Mark as Read
-                </button>
-              )}
+            {n.type !== 'ANNOUNCEMENT' && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {n.read ? (
+                  <button
+                    onClick={() => markAsUnread(n.id)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      mark_email_unread
+                    </span>
+                    Mark as Unread
+                  </button>
+                ) : (
+                  <GradientButton
+                    onClick={() => markAsRead(n.id)}
+                    size="small"
+                    className="!px-3 !py-2 !text-xs !rounded-lg !font-semibold hover:!translate-y-0"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      done
+                    </span>
+                    Mark as Read
+                  </GradientButton>
+                )}
 
-              <button
-                onClick={() => deleteNotification(n.id)}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-all ml-auto"
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  delete
-                </span>
-                Delete
-              </button>
-            </div>
+                <button
+                  onClick={() => deleteNotification(n.id)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg transition-all ml-auto"
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    delete
+                  </span>
+                  Delete
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </>
@@ -231,12 +180,13 @@ const Notifications = () => {
             error
           </span>
           <p className="text-sm font-semibold text-slate-600">{error}</p>
-          <button
+          <GradientButton
             onClick={fetchNotifications}
-            className="px-4 py-2 text-xs font-bold text-white bg-[#004ac6] rounded-lg hover:bg-[#004ac6]/90 transition-all"
+            size="small"
+            className="!text-xs !rounded-lg"
           >
             Try Again
-          </button>
+          </GradientButton>
         </div>
       </div>
     );
@@ -295,24 +245,30 @@ const Notifications = () => {
                 : notifications.length - unreadCount;
           const isActive = activeFilter === tab.key;
 
+          if (isActive) {
+            return (
+              <GradientButton
+                key={tab.key}
+                size="small"
+                onClick={() => setActiveFilter(tab.key)}
+                className="!px-3 sm:!px-4 !py-1.5 sm:!py-2 !text-xs sm:!text-sm !rounded-lg !shadow-sm !font-semibold hover:!translate-y-0"
+              >
+                {tab.label}
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/20">
+                  {count}
+                </span>
+              </GradientButton>
+            );
+          }
+
           return (
             <button
               key={tab.key}
               onClick={() => setActiveFilter(tab.key)}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${
-                isActive
-                  ? 'bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-              }`}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50"
             >
               {tab.label}
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : 'bg-slate-100 text-slate-500'
-                }`}
-              >
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
                 {count}
               </span>
             </button>
@@ -389,11 +345,10 @@ const Notifications = () => {
                     <div className="flex-1 min-w-0 ml-2 sm:ml-0">
                       <div className="flex items-start justify-between gap-2">
                         <h4
-                          className={`text-[13px] sm:text-sm leading-snug line-clamp-1 ${
-                            notification.read
+                          className={`text-[13px] sm:text-sm leading-snug line-clamp-1 ${notification.read
                               ? 'font-medium text-slate-600'
                               : 'font-bold text-slate-800'
-                          }`}
+                            }`}
                         >
                           {notification.title}
                         </h4>

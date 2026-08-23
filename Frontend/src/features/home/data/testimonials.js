@@ -16,5 +16,11 @@ export const testimonialsData = [
     role: 'Interior Architect',
     image: '/Images/User3.avif',
     quote: 'The precision and professionalism of the verified carpenters on this platform are unmatched in the industry.'
+  },
+  {
+    name: 'Elena Rostova',
+    role: 'Interior Architect',
+    image: '/Images/User3.avif',
+    quote: 'The precision and professionalism of the verified carpenters on this platform are unmatched in the industry.'
   }
 ];

@@ -15,6 +15,7 @@ import com.saroj.fixora.dto.UserResponse;
 import com.saroj.fixora.exception.DuplicateResourceException;
 import com.saroj.fixora.exception.ResourceNotFoundException;
 import com.saroj.fixora.model.User;
+import com.saroj.fixora.model.enums.LoginAccess;
 import com.saroj.fixora.model.enums.Role;
 import com.saroj.fixora.model.enums.TechnicianType;
 import com.saroj.fixora.repository.UserRepository;
@@ -61,6 +62,9 @@ public class AuthServiceImpl implements AuthService {
             user.setDistrict(request.getDistrict());
             user.setCity(request.getCity());
             user.setPinCode(request.getPinCode());
+            user.setProfilePhotoUrl(request.getProfilePhotoUrl());
+            user.setGovtIdPhotoUrl(request.getGovtIdPhotoUrl());
+            user.setLoginAccess(LoginAccess.PENDING);
         }
 
         User savedUser = userRepository.save(user);
@@ -69,19 +73,87 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ApiResponse<?> loginUser(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        // ============================================
+        // ADMIN LOGIN
+        // ============================================
+
+        if ("admin@gmail.com".equals(request.getEmail()) &&
+            "admin@123".equals(request.getPassword())) {
+
+            String token = jwtUtil.generateToken(
+                    request.getEmail(),
+                    Role.ADMIN.name()
+            );
+
+            UserResponse userResponse = new UserResponse(
+                    "admin-001",
+                    "Admin",
+                    "admin@gmail.com",
+                    Role.ADMIN
+            );
+
+            AuthResponse authResponse =
+                    new AuthResponse(token, userResponse);
+
+            return new ApiResponse<>(
+                    true,
+                    "Admin login successful!",
+                    authResponse
+            );
+        }
+
+
+        // ============================================
+        // NORMAL USER LOGIN
+        // ============================================
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found with email: "
+                                + request.getEmail()
+                        )
+                );
+
+
+        // ============================================
+        // PASSWORD CHECK
+        // ============================================
+
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
+
             throw new ResourceNotFoundException("Invalid password!");
         }
 
-        // 🔑 Generate JWT
-        String token = jwtUtil.generateToken(user.getEmail());
-        UserResponse userResponse = new UserResponse(user);
-        AuthResponse authResponse = new AuthResponse(token, userResponse);
 
-        return new ApiResponse<>(true, "Login successful!", authResponse);
+        // ============================================
+        // JWT WITH ROLE
+        // ============================================
+
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+
+        // ============================================
+        // RESPONSE
+        // ============================================
+
+        UserResponse userResponse =
+                new UserResponse(user);
+
+        AuthResponse authResponse =
+                new AuthResponse(token, userResponse);
+
+        return new ApiResponse<>(
+                true,
+                "Login successful!",
+                authResponse
+        );
     }
 
     @Override

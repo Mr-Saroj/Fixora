@@ -1,48 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import GradientButton from "../ui/GradientButton";
 
+import useActiveSection from "../../hooks/useActiveSection";
+import { navbarSections } from "../../utils/navbarUtils";
+
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("marketplace");
 
-  useEffect(() => {
-    const sections = [
-      "marketplace",
-      "how-it-works",
-      "pricing",
-      "support",
-    ];
+  const sections = navbarSections.map((section) => section.id);
 
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 150;
-
-      sections.forEach((section) => {
-        const element = document.getElementById(section);
-
-        if (
-          element &&
-          scrollPosition >= element.offsetTop &&
-          scrollPosition < element.offsetTop + element.offsetHeight
-        ) {
-          setActiveSection(section);
-        }
-      });
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const activeSection = useActiveSection(sections);
 
   const desktopLink = (id, label) => (
     <a
       href={`#${id}`}
-      className={`text-[16px] transition-all duration-300 ${activeSection === id
+      className={`text-[16px] transition-all duration-300 ${
+        activeSection === id
           ? "text-primary font-bold border-b-2 border-primary pb-1"
           : "text-text-muted hover:text-primary"
-        }`}
+      }`}
     >
       {label}
     </a>
@@ -52,10 +29,11 @@ const Navbar = () => {
     <a
       href={`#${id}`}
       onClick={() => setMenuOpen(false)}
-      className={`transition-all duration-300 ${activeSection === id
+      className={`transition-all duration-300 ${
+        activeSection === id
           ? "text-primary font-semibold"
           : "text-text-muted hover:text-primary"
-        }`}
+      }`}
     >
       {label}
     </a>
@@ -63,6 +41,7 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-surface-glass dark:bg-background-dark/70 backdrop-blur-md border-b border-white/40 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
+      
       <div className="max-w-[1280px] mx-auto flex justify-between items-center px-6 py-4">
 
         {/* Logo */}
@@ -95,7 +74,14 @@ const Navbar = () => {
                 d="M10 0 C10 0 40 0 40 5 C40 10 20 12 20 15 L20 25 L35 25 C35 25 35 30 30 30 L20 30 L20 45 L10 45 L10 0"
                 fill="url(#logo-grad)"
               />
-              <circle cx="45" cy="5" r="5" fill="#10B981" />
+
+              <circle
+                cx="45"
+                cy="5"
+                r="5"
+                fill="#10B981"
+              />
+
               <text
                 x="65"
                 y="35"
@@ -112,10 +98,11 @@ const Navbar = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
-          {desktopLink("marketplace", "Marketplace")}
-          {desktopLink("how-it-works", "How it Works")}
-          {desktopLink("pricing", "Pricing")}
-          {desktopLink("support", "Support")}
+          {navbarSections.map((section) => (
+            <React.Fragment key={section.id}>
+              {desktopLink(section.id, section.label)}
+            </React.Fragment>
+          ))}
         </div>
 
         {/* Desktop Buttons */}
@@ -126,6 +113,7 @@ const Navbar = () => {
           >
             Login
           </Link>
+
           <GradientButton to="/register" size="normal">
             Get Started
           </GradientButton>
@@ -137,36 +125,43 @@ const Navbar = () => {
           className="md:hidden flex flex-col justify-center items-center w-10 h-10"
         >
           <span
-            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-2" : ""
-              }`}
+            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${
+              menuOpen ? "rotate-45 translate-y-2" : ""
+            }`}
           />
 
           <span
-            className={`block h-0.5 w-6 bg-black my-1 transition-all duration-300 ${menuOpen ? "opacity-0" : ""
-              }`}
+            className={`block h-0.5 w-6 bg-black my-1 transition-all duration-300 ${
+              menuOpen ? "opacity-0" : ""
+            }`}
           />
 
           <span
-            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-2" : ""
-              }`}
+            className={`block h-0.5 w-6 bg-black transition-all duration-300 ${
+              menuOpen ? "-rotate-45 -translate-y-2" : ""
+            }`}
           />
         </button>
       </div>
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 bg-white shadow-lg ${menuOpen ? "max-h-[500px]" : "max-h-0"
-          }`}
+        className={`md:hidden overflow-hidden transition-all duration-300 bg-white shadow-lg ${
+          menuOpen ? "max-h-[500px]" : "max-h-0"
+        }`}
       >
         <div className="flex flex-col px-6 py-4 space-y-5">
 
-          {mobileLink("marketplace", "Marketplace")}
-          {mobileLink("how-it-works", "How it Works")}
-          {mobileLink("pricing", "Pricing")}
-          {mobileLink("support", "Support")}
+          {/* Mobile Navigation Links */}
+          {navbarSections.map((section) => (
+            <React.Fragment key={section.id}>
+              {mobileLink(section.id, section.label)}
+            </React.Fragment>
+          ))}
 
           <hr />
 
+          {/* Login */}
           <Link
             to="/login"
             onClick={() => setMenuOpen(false)}
@@ -175,6 +170,7 @@ const Navbar = () => {
             Login
           </Link>
 
+          {/* Get Started */}
           <Link
             to="/register"
             onClick={() => setMenuOpen(false)}

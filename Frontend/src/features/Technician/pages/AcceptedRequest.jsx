@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTechnicianJobs } from '../hooks/useTechnicianJobs';
+import RequestCard from '../../../components/ui/RequestCard';
+import GradientButton from '../../../components/ui/GradientButton';
 
 // ── Mini Stepper Sub-component ─────────────────────────
 const MiniStepper = ({ currentStep, status, steps }) => {
@@ -11,19 +13,18 @@ const MiniStepper = ({ currentStep, status, steps }) => {
           <div className="flex flex-col items-center">
             <div
               className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-all
-              ${
-                i < currentStep
-                  ? 'bg-[#004ac6] text-white'
+              ${i < currentStep
+                  ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white shadow-sm'
                   : i === currentStep
-                  ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white ring-2 ring-[#004ac6]/20'
-                  : 'bg-slate-100 text-slate-400'
-              }`}
+                    ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] text-white ring-2 ring-[#004ac6]/20'
+                    : 'bg-slate-100 text-slate-400'
+                }`}
             >
               {i < currentStep ? '✓' : i + 1}
             </div>
           </div>
           {i < steps.length - 1 && (
-            <div className={`flex-1 h-0.5 rounded-full transition-all ${i < currentStep ? 'bg-[#004ac6]' : 'bg-slate-100'}`} />
+            <div className={`flex-1 h-0.5 rounded-full transition-all ${i < currentStep ? 'bg-gradient-to-r from-[#004ac6] to-[#57dffe]' : 'bg-slate-100'}`} />
           )}
         </React.Fragment>
       ))}
@@ -102,16 +103,17 @@ const JobDetailModal = ({ hook }) => {
                     <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-slate-400">route</span>
                     <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">Job Progress</span>
                   </div>
-                  <button
+                  <GradientButton
                     onClick={() => {
                       if (job.currentStep === 1) setShowCompleteConfirm(job.id);
                       else advanceJob(job.id);
                     }}
                     disabled={job.currentStep >= 2 || isUpdating}
-                    className="px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm hover:shadow-md disabled:opacity-30 disabled:pointer-events-none transition-all whitespace-nowrap"
+                    size="small"
+                    className="!px-3 sm:!px-4 !py-1.5 !text-[11px] sm:!text-xs !rounded-lg !shadow-sm hover:!shadow-md hover:!translate-y-0"
                   >
                     {isUpdating ? 'Updating…' : job.currentStep === 1 ? 'Mark Complete' : 'Start Job'}
-                  </button>
+                  </GradientButton>
                 </div>
 
                 <div className="relative flex justify-between items-start pt-1">
@@ -123,8 +125,8 @@ const JobDetailModal = ({ hook }) => {
                     const isActive = i === job.currentStep;
                     return (
                       <div key={i} className="relative z-10 flex flex-col items-center text-center w-14 sm:w-16">
-                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300 shadow-md
-                          ${isActive ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 ring-4 ring-[#004ac6]/10' : isDone ? 'bg-[#004ac6]' : 'bg-slate-200 text-slate-400 shadow-none'}`}>
+                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300
+                          ${isActive ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 ring-4 ring-[#004ac6]/10 shadow-[0_8px_20px_-4px_rgba(0,74,198,0.4)]' : isDone ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] shadow-md' : 'bg-slate-200 text-slate-400 shadow-none'}`}>
                           <span className="material-symbols-outlined text-[18px] sm:text-[20px]">{isDone ? 'check' : step.icon}</span>
                         </div>
                         <span className={`text-[9px] sm:text-[10px] mt-1.5 sm:mt-2 font-medium leading-tight ${isActive ? 'text-[#004ac6] font-bold' : 'text-slate-500'}`}>{step.label}</span>
@@ -262,9 +264,9 @@ const AcceptedRequest = () => {
         <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 sm:p-10 text-center max-w-md w-full">
           <span className="material-symbols-outlined text-[36px] text-red-400">error</span>
           <p className="text-sm font-bold text-slate-700 mt-3">{error}</p>
-          <button onClick={fetchJobs} className="mt-4 px-4 py-2 rounded-xl text-sm font-bold text-white bg-[#004ac6]">
+          <GradientButton onClick={fetchJobs} className="mt-4">
             Retry
-          </button>
+          </GradientButton>
         </div>
       </div>
     );
@@ -290,7 +292,7 @@ const AcceptedRequest = () => {
         </button>
       </div>
 
-      {/* ═══════════ STATS — responsive grid (no horizontal scroll) ═══════════ */}
+      {/* ═══════════ STATS ═══════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {[
           { icon: 'work', label: 'Total Accepted', value: counts.all, color: 'bg-blue-50 text-blue-600' },
@@ -310,7 +312,6 @@ const AcceptedRequest = () => {
 
       {/* ═══════════ SEARCH + FILTERS ═══════════ */}
       <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100/80 shadow-sm p-3 sm:p-4">
-        {/* Search bar — always visible, compact on mobile */}
         <div className="flex items-center bg-slate-50 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-100">
           <span className="material-symbols-outlined text-slate-400 text-[18px] sm:text-[20px] mr-2 sm:mr-3">search</span>
           <input
@@ -327,30 +328,43 @@ const AcceptedRequest = () => {
           )}
         </div>
 
-        {/* Search result indicator */}
         {searchQuery && (
           <p className="text-[11px] sm:text-xs text-slate-400 mt-2 px-1 truncate">
             &ldquo;{searchQuery}&rdquo; — {filteredJobs.length} result{filteredJobs.length !== 1 ? 's' : ''}
           </p>
         )}
 
-        {/* Filter tabs */}
+        {/* ── Filter Pills ── */}
         <div className="flex gap-1.5 sm:gap-2 mt-3 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
           {filters.map((filter) => {
             const isActive = activeFilter === filter.key;
+
+            if (isActive) {
+              return (
+                <GradientButton
+                  key={filter.key}
+                  size="small"
+                  onClick={() => setActiveFilter(filter.key)}
+                  className="!px-2.5 sm:!px-4 !py-1.5 sm:!py-2 !text-[11px] sm:!text-sm !rounded-lg sm:!rounded-xl !shadow-md !shadow-[#004ac6]/20 !font-semibold hover:!translate-y-0 whitespace-nowrap shrink-0 !border-0"
+                >
+                  <span className="material-symbols-outlined text-[14px] sm:text-[18px]">{filter.icon}</span>
+                  <span className="hidden xs:inline">{filter.label}</span>
+                  <span className="text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/20">
+                    {counts[filter.key]}
+                  </span>
+                </GradientButton>
+              );
+            }
+
             return (
               <button
                 key={filter.key}
                 onClick={() => setActiveFilter(filter.key)}
-                className={`inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap shrink-0 border
-                  ${isActive
-                    ? 'bg-[#004ac6] text-white border-[#004ac6] shadow-md shadow-[#004ac6]/20'
-                    : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 active:bg-slate-200'
-                  }`}
+                className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap shrink-0 border bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 active:bg-slate-200"
               >
                 <span className="material-symbols-outlined text-[14px] sm:text-[18px]">{filter.icon}</span>
                 <span className="hidden xs:inline">{filter.label}</span>
-                <span className={`text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded-md ${isActive ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-500'}`}>
+                <span className="text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-slate-200/70 text-slate-500">
                   {counts[filter.key]}
                 </span>
               </button>
@@ -384,199 +398,120 @@ const AcceptedRequest = () => {
         <div className="space-y-2.5 sm:space-y-3">
           {filteredJobs.map((job) => {
             const catColor = getCategoryColor(job.category);
+            const catIcon = getCategoryIcon(job.category);
             const statusConfig = getStatusConfig(job.status);
             const isUpdating = updatingId === job.id;
 
+            const accentClass =
+              job.status === 'completed'
+                ? 'bg-gradient-to-r from-emerald-400 to-emerald-300'
+                : job.status === 'in-progress'
+                  ? 'bg-gradient-to-r from-[#004ac6] to-[#57dffe]'
+                  : 'bg-gradient-to-r from-purple-400 to-purple-300';
+
+            const borderClass =
+              job.status === 'completed'
+                ? 'border-emerald-100'
+                : job.urgency === 'Emergency'
+                  ? 'border-red-200/60'
+                  : 'border-slate-100/80';
+
+            const stepper = <MiniStepper currentStep={job.currentStep} status={job.status} steps={steps} />;
+
             return (
-              <div
+              <RequestCard
                 key={job.id}
-                className={`bg-white rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group
-                  ${job.status === 'completed'
-                    ? 'border-emerald-100'
-                    : job.urgency === 'Emergency'
-                    ? 'border-red-200/60'
-                    : 'border-slate-100/80'
-                  }`}
-              >
-                {/* Top accent line */}
-                <div className={`h-0.5 sm:h-1 ${
-                  job.status === 'completed'
-                    ? 'bg-gradient-to-r from-emerald-400 to-emerald-300'
-                    : job.status === 'in-progress'
-                    ? 'bg-gradient-to-r from-[#004ac6] to-[#57dffe]'
-                    : 'bg-gradient-to-r from-purple-400 to-purple-300'
-                }`} />
-
-                <div className="px-4 py-3 sm:px-5 sm:py-4">
-
-                  {/* ═══════ MOBILE CARD ═══════ */}
-                  <div className="sm:hidden space-y-2">
-                    {/* Badges row */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${catColor.bg} ${catColor.text} ${catColor.border} border flex items-center gap-1`}>
-                        <span className="material-symbols-outlined text-[12px]">{getCategoryIcon(job.category)}</span>
-                        {job.category}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} border flex items-center gap-1`}>
-                        <span className="material-symbols-outlined text-[11px]">{statusConfig.icon}</span>
-                        {statusConfig.label}
-                      </span>
-                      {job.urgency === 'Emergency' && job.status !== 'completed' && (
-                        <span className="text-[9px] font-extrabold uppercase bg-red-500 text-white px-2 py-0.5 rounded-md">Emergency</span>
-                      )}
-                      <span className="text-[10px] text-slate-400 ml-auto">{job.id}</span>
-                    </div>
-
-                    {/* Issue */}
-                    <p
-                      className="font-bold text-slate-800 text-[13px] leading-snug line-clamp-2 cursor-pointer group-hover:text-[#004ac6] transition-colors"
+                isEmergency={job.urgency === 'Emergency' && job.status !== 'completed'}
+                accentClass={accentClass}
+                borderClass={borderClass}
+                category={{ ...catColor, icon: catIcon, label: job.category }}
+                badges={
+                  <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} border flex items-center gap-1`}>
+                    <span className="material-symbols-outlined text-[11px] sm:text-[12px]">{statusConfig.icon}</span>
+                    {statusConfig.label}
+                  </span>
+                }
+                id={job.id}
+                title={job.issue}
+                onTitleClick={() => setSelectedJob(job)}
+                meta={[
+                  { icon: 'person', value: job.name, colorClass: 'text-[#004ac6]' },
+                  { icon: 'home', value: job.address, colorClass: 'text-red-400', truncate: true },
+                  { icon: 'schedule', value: `Requested ${formatDate(job.createdAt)}` },
+                ]}
+                mobileExtra={stepper}
+                desktopExtra={stepper}
+                mobileActions={
+                  <>
+                    <button
                       onClick={() => setSelectedJob(job)}
+                      className="w-10 shrink-0 rounded-lg text-xs font-bold text-[#004ac6] bg-blue-50 border border-blue-100 active:bg-[#004ac6] active:text-white transition-all flex items-center justify-center"
                     >
-                      {job.issue}
-                    </p>
+                      <span className="material-symbols-outlined text-[18px]">visibility</span>
+                    </button>
 
-                    {/* Customer + Address */}
-                    <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                      <span className="flex items-center gap-0.5 font-medium text-slate-700">
-                        <span className="material-symbols-outlined text-[13px] text-[#004ac6]">person</span>
-                        {job.name}
-                      </span>
-                      <span className="text-slate-300">•</span>
-                      <span className="flex items-center gap-0.5 truncate min-w-0">
-                        <span className="material-symbols-outlined text-[13px] text-red-400 shrink-0">home</span>
-                        <span className="truncate">{job.address}</span>
-                      </span>
-                    </div>
-
-                    {/* Date */}
-                    <div className="text-[10px] text-slate-400 flex items-center gap-0.5">
-                      <span className="material-symbols-outlined text-[12px]">schedule</span>
-                      {formatDate(job.createdAt)}
-                    </div>
-
-                    {/* Mini Stepper */}
-                    <MiniStepper currentStep={job.currentStep} status={job.status} steps={steps} />
-
-                    {/* Action buttons */}
-                    <div className="flex items-stretch gap-2 pt-1">
-                      <button
-                        onClick={() => setSelectedJob(job)}
-                        className="w-10 shrink-0 rounded-lg text-xs font-bold text-[#004ac6] bg-blue-50 border border-blue-100 active:bg-[#004ac6] active:text-white transition-all flex items-center justify-center"
+                    {job.status !== 'completed' ? (
+                      <GradientButton
+                        onClick={() => advanceJob(job.id)}
+                        disabled={isUpdating}
+                        size="small"
+                        className="flex-1 !py-2.5 !text-xs !rounded-lg !font-bold !shadow-sm active:!shadow-md hover:!translate-y-0"
                       >
-                        <span className="material-symbols-outlined text-[18px]">visibility</span>
-                      </button>
-
-                      {job.status !== 'completed' ? (
-                        <button
-                          onClick={() => advanceJob(job.id)}
-                          disabled={isUpdating}
-                          className="flex-1 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#004ac6] to-[#57dffe] shadow-sm disabled:opacity-50 active:shadow-md transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            {isUpdating ? 'progress_activity' : job.currentStep === 1 ? 'check_circle' : 'play_arrow'}
-                          </span>
-                          {isUpdating ? 'Updating…' : job.currentStep === 1 ? 'Complete Job' : 'Start Job'}
-                        </button>
-                      ) : job.rating ? (
-                        <div className="flex-1 flex items-center justify-between px-3 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100">
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                            {job.rating}.0
-                          </span>
-                          {job.review && (
-                            <span className="text-[10px] text-amber-500 font-medium truncate max-w-[60%]">&quot;{job.review}&quot;</span>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex-1 flex items-center gap-1.5 px-3 rounded-lg text-xs text-slate-400 bg-slate-50 border border-slate-100">
-                          <span className="material-symbols-outlined text-[14px]">hourglass_empty</span>
-                          Awaiting rating
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ═══════ DESKTOP CARD ═══════ */}
-                  <div className="hidden sm:flex flex-col lg:flex-row lg:items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-3">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${catColor.bg} ${catColor.text} ${catColor.border} border flex items-center gap-1`}>
-                          <span className="material-symbols-outlined text-[14px]">{getCategoryIcon(job.category)}</span>
-                          {job.category}
+                        <span className="material-symbols-outlined text-[16px]">
+                          {isUpdating ? 'progress_activity' : job.currentStep === 1 ? 'check_circle' : 'play_arrow'}
                         </span>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} border flex items-center gap-1`}>
-                          <span className="material-symbols-outlined text-[12px]">{statusConfig.icon}</span>
-                          {statusConfig.label}
+                        {isUpdating ? 'Updating…' : job.currentStep === 1 ? 'Complete Job' : 'Start Job'}
+                      </GradientButton>
+                    ) : job.rating ? (
+                      <div className="flex-1 flex items-center justify-between px-3 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                          {job.rating}.0
                         </span>
-                        {job.urgency === 'Emergency' && job.status !== 'completed' && (
-                          <span className="text-[10px] font-extrabold uppercase bg-red-500 text-white px-2 py-1 rounded-lg">Emergency</span>
+                        {job.review && (
+                          <span className="text-[10px] text-amber-500 font-medium truncate max-w-[60%]">&quot;{job.review}&quot;</span>
                         )}
-                        <span className="text-xs text-slate-400 ml-auto lg:ml-0">{job.id}</span>
                       </div>
-
-                      <h3
-                        className="font-bold text-slate-800 text-[15px] leading-snug mb-1.5 cursor-pointer hover:text-[#004ac6] transition-colors"
-                        onClick={() => setSelectedJob(job)}
+                    ) : (
+                      <div className="flex-1 flex items-center gap-1.5 px-3 rounded-lg text-xs text-slate-400 bg-slate-50 border border-slate-100">
+                        <span className="material-symbols-outlined text-[14px]">hourglass_empty</span>
+                        Awaiting rating
+                      </div>
+                    )}
+                  </>
+                }
+                desktopActions={
+                  <>
+                    <button
+                      onClick={() => setSelectedJob(job)}
+                      className="flex-1 lg:flex-none px-4 py-2.5 rounded-xl text-xs font-bold text-[#004ac6] bg-blue-50 border border-blue-100 hover:bg-[#004ac6] hover:text-white transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">visibility</span>
+                      Details
+                    </button>
+                    {job.status !== 'completed' && (
+                      <GradientButton
+                        onClick={() => advanceJob(job.id)}
+                        disabled={isUpdating}
+                        size="small"
+                        className="flex-1 lg:flex-none !px-3 !py-2.5 !text-xs !rounded-xl !font-bold !shadow-sm hover:!shadow-md hover:!-translate-y-0.5"
+                        title={job.currentStep === 1 ? 'Mark Complete' : 'Start Job'}
                       >
-                        {job.issue}
-                      </h3>
-
-                      <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
-                        <span className="flex items-center gap-1 font-medium text-slate-600">
-                          <span className="material-symbols-outlined text-[14px]">person</span>
-                          {job.name}
-                        </span>
-                        <span className="text-slate-300">•</span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">home</span>
-                          <span className="truncate max-w-[200px]">{job.address}</span>
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3 flex-wrap text-xs text-slate-400 mt-1.5">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">schedule</span>
-                          Requested {formatDate(job.createdAt)}
-                        </span>
-                      </div>
-
-                      <MiniStepper currentStep={job.currentStep} status={job.status} steps={steps} />
-                    </div>
-
-                    <div className="flex lg:flex-col items-center lg:items-end gap-2 lg:min-w-[170px] shrink-0">
-                      <div className="flex gap-2 w-full lg:w-auto">
-                        <button
-                          onClick={() => setSelectedJob(job)}
-                          className="flex-1 lg:flex-none px-4 py-2.5 rounded-xl text-xs font-bold text-[#004ac6] bg-blue-50 border border-blue-100 hover:bg-[#004ac6] hover:text-white transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">visibility</span>
-                          Details
-                        </button>
-                        {job.status !== 'completed' && (
-                          <button
-                            onClick={() => advanceJob(job.id)}
-                            disabled={isUpdating}
-                            className="px-3 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#004ac6] to-[#57dffe] shadow-sm disabled:opacity-50 transition-all"
-                            title={job.currentStep === 1 ? 'Mark Complete' : 'Start Job'}
-                          >
-                            {isUpdating ? '…' : job.currentStep === 1 ? 'Complete' : 'Start'}
-                          </button>
-                        )}
-                        {job.status === 'completed' && job.rating && (
-                          <span
-                            className="px-3 py-2.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 flex items-center gap-1"
-                            title={job.review || ''}
-                          >
-                            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                            {job.rating}.0
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
+                        {isUpdating ? '…' : job.currentStep === 1 ? 'Complete' : 'Start'}
+                      </GradientButton>
+                    )}
+                    {job.status === 'completed' && job.rating && (
+                      <span
+                        className="px-3 py-2.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 flex items-center gap-1"
+                        title={job.review || ''}
+                      >
+                        <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                        {job.rating}.0
+                      </span>
+                    )}
+                  </>
+                }
+              />
             );
           })}
         </div>

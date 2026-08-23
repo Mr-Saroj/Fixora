@@ -6,6 +6,8 @@ import {
   getCategoryIcon,
   formatDate,
 } from '../hooks/useDashboardData';
+import GradientButton from '../../../components/ui/GradientButton';
+
 
 const MiddleContent = () => {
   const {
@@ -434,15 +436,16 @@ const MiddleContent = () => {
                 </div>
               </div>
 
-              <button
+              <GradientButton
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm shadow-[0_8px_20px_-5px_rgba(0,74,198,0.3)] hover:shadow-[0_12px_25px_-5px_rgba(0,74,198,0.5)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mt-1 sm:mt-2"
+                size="normal"
+                className="w-full mt-1 sm:mt-2"
               >
                 Post Job Now
-                <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
+                <span className="material-symbols-outlined text-[16px] sm:text-[18px] ml-2">
                   send
                 </span>
-              </button>
+              </GradientButton>
             </form>
           </div>
         </div>

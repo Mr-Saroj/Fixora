@@ -18,6 +18,14 @@ const App = () => {
         return;
       }
 
+      // ✅ Admin has no DB record — restore from localStorage directly
+      const savedUser = JSON.parse(localStorage.getItem('user') || 'null');
+      if (savedUser?.role === 'ADMIN') {
+        dispatch(loginSuccess(savedUser));
+        setIsCheckingAuth(false);
+        return;
+      }
+
       try {
         const response = await getCurrentUser();
         const data = response.data;
@@ -26,11 +34,13 @@ const App = () => {
           dispatch(loginSuccess(data.data));
         } else {
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
           dispatch(logout());
         }
       } catch (error) {
         console.error('Session restore failed:', error);
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         dispatch(logout());
       } finally {
         setIsCheckingAuth(false);

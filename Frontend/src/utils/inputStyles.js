@@ -1,0 +1,2 @@
+export const inputBaseClass =
+  'w-full px-4 py-3.5 rounded-xl border border-black/[0.1] bg-surface-bright focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-[15px] transition-all';

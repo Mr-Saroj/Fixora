@@ -4,6 +4,7 @@ import { registerUser, loginUser, getCurrentUser, sendForgotPasswordOtp, resetPa
 
 import { useAppDispatch } from "../../../redux/hooks";
 import { loginSuccess, logout } from "../../../redux/slices/authSlice";
+import { uploadPhotoToCloudinary } from '../../customer/services/cloudinaryService';
 
 export const useAuth = () => {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ export const useAuth = () => {
           navigate("/customer-dashboard");
         } else if (user.role === "TECHNICIAN") {
           navigate("/technician-dashboard");
+        } else if (user.role === "ADMIN") {
+          navigate("/admin-dashboard");
         } else {
           alert("Unknown user role!");
         }
@@ -54,7 +57,29 @@ export const useAuth = () => {
   const register = async (userData) => {
     setIsLoading(true);
     try {
-      const response = await registerUser(userData);
+      // ── 1. Upload profile photo to Cloudinary (if provided) ──
+      let profilePhotoUrl = null;
+      let govtIdPhotoUrl = null;
+
+      if (userData.profilePhotoFile) {
+        profilePhotoUrl = await uploadPhotoToCloudinary(userData.profilePhotoFile);
+      }
+
+      // ── 2. Upload govt ID photo to Cloudinary (if provided) ──
+      if (userData.govtIdPhotoFile) {
+        govtIdPhotoUrl = await uploadPhotoToCloudinary(userData.govtIdPhotoFile);
+      }
+
+      // ── 3. Build clean payload — no File objects, just URLs ──
+      const { profilePhotoFile, govtIdPhotoFile, ...rest } = userData;
+      const payload = {
+        ...rest,
+        profilePhotoUrl,   // null for customers, URL string for technicians
+        govtIdPhotoUrl,
+      };
+
+      // ── 4. Send to Spring Boot ──
+      const response = await registerUser(payload);
       const data = response.data;
 
       if (data.success) {
@@ -75,6 +100,13 @@ export const useAuth = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
+    // ✅ Admin has no DB record — restore from localStorage directly
+    const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+    if (savedUser?.role === "ADMIN") {
+      dispatch(loginSuccess(savedUser));
+      return;
+    }
+
     try {
       const response = await getCurrentUser();
       const data = response.data;
@@ -88,7 +120,7 @@ export const useAuth = () => {
       localStorage.removeItem("user");
       dispatch(logout());
     }
-  };
+};
   const forgotPassword = async (email, onSuccess) => {
     setIsLoading(true);
     try {
@@ -104,7 +136,7 @@ export const useAuth = () => {
       setIsLoading(false);
     }
   };
- 
+
   const resetUserPassword = async (email, otp, newPassword) => {
     setIsLoading(true);
     try {

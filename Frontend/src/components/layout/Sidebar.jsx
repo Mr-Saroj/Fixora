@@ -12,7 +12,7 @@ import {
   getCloseButtonClasses,
   isMobileView,
   DESKTOP_BREAKPOINT,
-} from '../utils/sidebarUtils';
+} from '../../utils/sidebarUtils';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, navLinks, bottomLinks, dashboardLabel }) => {
 
