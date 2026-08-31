@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import AuthLayout from '../components/AuthLayout';
-import { EmailStep, OtpStep, NewPasswordStep } from '../components/ForgotForm';
+import { EmailStep, OtpStep, NewPasswordStep } from '../components/Forgotform';
 
 const STEP_CONFIG = {
   1: { title: 'Forgot Password', subtitle: "Enter your registered email and we'll send you an OTP." },
