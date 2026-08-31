@@ -4,6 +4,7 @@ import { router } from './routes';
 import { useAppDispatch } from './redux/hooks';
 import { loginSuccess, logout } from './redux/slices/authSlice';
 import { getCurrentUser } from './features/auth/services/authService'; // adjust path if needed
+import PageLoader from './components/common/PageLoader'; // adjust path if needed
 
 const App = () => {
   const dispatch = useAppDispatch();
@@ -52,19 +53,13 @@ const App = () => {
 
   // ⏳ Prevent flashing "logged out" UI while we're still checking the token
   if (isCheckingAuth) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center">
-        <span className="material-symbols-outlined animate-spin text-4xl text-primary">
-          progress_activity
-        </span>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
     <>
-      {/* This automatically handles rendering the correct page 
-        based on the URL in the browser 
+      {/* This automatically handles rendering the correct page
+        based on the URL in the browser
       */}
       <RouterProvider router={router} />
     </>

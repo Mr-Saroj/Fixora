@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useRequestHistory } from '../hooks/useRequestHistory';
-import { submitRating } from '../services/requestService'; // adjust path to match your project
+import { submitRating } from '../services/requestService';
+import PageLoader from '../../../components/common/PageLoader';
+import ErrorPage from '../../../components/common/ErrorPage';
 
 // ── Star rating input ─────────────────────────────────────
 const StarInput = ({ value, onChange }) => {
@@ -17,9 +19,8 @@ const StarInput = ({ value, onChange }) => {
                     className="p-0.5"
                 >
                     <span
-                        className={`material-symbols-outlined text-[28px] transition-colors ${
-                            star <= (hover || value) ? 'text-amber-400' : 'text-slate-200'
-                        }`}
+                        className={`material-symbols-outlined text-[28px] transition-colors ${star <= (hover || value) ? 'text-amber-400' : 'text-slate-200'
+                            }`}
                         style={{ fontVariationSettings: star <= (hover || value) ? "'FILL' 1" : "'FILL' 0" }}
                     >
                         star
@@ -30,7 +31,7 @@ const StarInput = ({ value, onChange }) => {
     );
 };
 
-// ── Rate Technician block (shown inside modal for completed, unrated jobs) ──
+// ── Rate Technician block ─────────────────────────────────
 const RateTechnicianBlock = ({ req, onRated }) => {
     const [rating, setRating] = useState(0);
     const [review, setReview] = useState('');
@@ -38,19 +39,12 @@ const RateTechnicianBlock = ({ req, onRated }) => {
     const [err, setErr] = useState(null);
 
     const handleSubmit = async () => {
-        if (rating < 1) {
-            setErr('Please select a star rating');
-            return;
-        }
+        if (rating < 1) { setErr('Please select a star rating'); return; }
         setSubmitting(true);
         setErr(null);
         try {
             const res = await submitRating(req.id, { rating, review });
-            const body = res.data;
-            if (!body.success) {
-                setErr(body.message || 'Could not submit rating');
-                return;
-            }
+            if (!res.data.success) { setErr(res.data.message || 'Could not submit rating'); return; }
             onRated(req.id, { rating, review });
         } catch (e) {
             setErr(e?.response?.data?.message || 'Could not submit rating');
@@ -61,9 +55,7 @@ const RateTechnicianBlock = ({ req, onRated }) => {
 
     return (
         <div className="bg-amber-50/60 rounded-2xl p-5 border border-amber-100">
-            <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-3">
-                Rate this technician
-            </p>
+            <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-3">Rate this technician</p>
             <StarInput value={rating} onChange={setRating} />
             <textarea
                 value={review}
@@ -84,7 +76,7 @@ const RateTechnicianBlock = ({ req, onRated }) => {
     );
 };
 
-// ── Read-only rating display (already rated) ─────────────
+// ── Read-only rating display ──────────────────────────────
 const RatingDisplay = ({ rating, review }) => (
     <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-100/60">
         <p className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-2">Your Rating</p>
@@ -106,16 +98,10 @@ const RatingDisplay = ({ rating, review }) => (
 // ── Detail Modal ───────────────────────────────────────────
 const DetailModal = ({ req, onClose, helpers, onRated }) => {
     if (!req) return null;
-
     const {
-        STATUS_STEPS,
-        getStepIndex,
-        getProgressWidth,
-        isStepDone,
-        isStepActive,
-        getStepCircleClass,
-        getStepLabelClass,
-        formatDate,
+        STATUS_STEPS, getStepIndex, getProgressWidth,
+        isStepDone, isStepActive, getStepCircleClass,
+        getStepLabelClass, formatDate,
     } = helpers;
 
     const stepIndex = getStepIndex(req.status);
@@ -124,31 +110,25 @@ const DetailModal = ({ req, onClose, helpers, onRated }) => {
 
     return (
         <>
-            <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
-                onClick={onClose}
-            />
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]" onClick={onClose} />
             <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
                 <div
                     className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pointer-events-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Modal Header */}
+                    {/* Header */}
                     <div className="sticky top-0 bg-white/90 backdrop-blur-xl p-6 pb-4 border-b border-slate-100 rounded-t-3xl z-10 flex items-center justify-between">
                         <div>
                             <h2 className="text-lg font-extrabold text-slate-800">Request Details</h2>
                             <p className="text-xs text-slate-400 mt-0.5">#{req.id?.slice(-6).toUpperCase()}</p>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition-all"
-                        >
+                        <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition-all">
                             <span className="material-symbols-outlined text-[22px]">close</span>
                         </button>
                     </div>
 
                     <div className="p-6 space-y-6">
-                        {/* ── Status Tracker ── */}
+                        {/* Status Tracker */}
                         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-5">Job Status</p>
                             <div className="relative">
@@ -161,18 +141,17 @@ const DetailModal = ({ req, onClose, helpers, onRated }) => {
                                     {STATUS_STEPS.map((step, i) => {
                                         const done = isStepDone(stepIndex, i);
                                         const active = isStepActive(stepIndex, i);
-                                        const circleClass = getStepCircleClass(done, active);
-                                        const labelClass = getStepLabelClass(done);
-                                        const label = step === 'IN_PROGRESS' ? 'IN PROGRESS' : step;
                                         return (
                                             <div key={step} className="flex flex-col items-center gap-2 w-16">
-                                                <div className={circleClass}>
+                                                <div className={getStepCircleClass(done, active)}>
                                                     {done
                                                         ? <span className="material-symbols-outlined text-white text-[14px]">check</span>
                                                         : <span className="w-2 h-2 rounded-full bg-slate-300" />
                                                     }
                                                 </div>
-                                                <span className={labelClass}>{label}</span>
+                                                <span className={getStepLabelClass(done)}>
+                                                    {step === 'IN_PROGRESS' ? 'IN PROGRESS' : step}
+                                                </span>
                                             </div>
                                         );
                                     })}
@@ -180,7 +159,7 @@ const DetailModal = ({ req, onClose, helpers, onRated }) => {
                             </div>
                         </div>
 
-                        {/* ── Technician Info ── */}
+                        {/* Technician Info */}
                         {req.technician ? (
                             <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-100">
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Assigned Technician</p>
@@ -211,14 +190,14 @@ const DetailModal = ({ req, onClose, helpers, onRated }) => {
                             </div>
                         )}
 
-                        {/* ── Rating (completed jobs only) ── */}
+                        {/* Rating */}
                         {isCompleted && req.technician && (
                             req.rating
                                 ? <RatingDisplay rating={req.rating} review={req.review} />
                                 : <RateTechnicianBlock req={req} onRated={onRated} />
                         )}
 
-                        {/* ── Request Info Grid ── */}
+                        {/* Info Grid */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                 <span className="material-symbols-outlined text-[18px] text-slate-400 mb-1 block">category</span>
@@ -238,19 +217,21 @@ const DetailModal = ({ req, onClose, helpers, onRated }) => {
                             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                 <span className="material-symbols-outlined text-[18px] text-slate-400 mb-1 block">priority_high</span>
                                 <p className="text-xs text-slate-400">Urgency</p>
-                                <p className={req.urgency?.toUpperCase() === 'EMERGENCY' ? 'text-sm font-bold mt-0.5 text-red-500' : 'text-sm font-bold mt-0.5 text-slate-700'}>
+                                <p className={req.urgency?.toUpperCase() === 'EMERGENCY'
+                                    ? 'text-sm font-bold mt-0.5 text-red-500'
+                                    : 'text-sm font-bold mt-0.5 text-slate-700'}>
                                     {req.urgency}
                                 </p>
                             </div>
                         </div>
 
-                        {/* ── Description ── */}
+                        {/* Description */}
                         <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                             <p className="text-xs text-slate-400 mb-1">Description</p>
                             <p className="text-sm text-slate-700 leading-relaxed">{req.description}</p>
                         </div>
 
-                        {/* ── Photos ── */}
+                        {/* Photos */}
                         {req.photoUrls && req.photoUrls.length > 0 && (
                             <div>
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Attached Photos</p>
@@ -278,47 +259,26 @@ const DetailModal = ({ req, onClose, helpers, onRated }) => {
 // ── Main Component ─────────────────────────────────────────
 const RequestHistory = () => {
     const {
-        requests,
-        loading,
-        error,
-        selectedRequest,
-        setSelectedRequest,
-        withOverride,
-        handleRated,
-        modalHelpers,
-        getStatusStyles,
-        getStatusIcon,
-        getCategoryIcon,
-        formatDate,
+        requests, loading, loadingMore, error,
+        hasMore, sentinelRef,
+        selectedRequest, setSelectedRequest,
+        withOverride, handleRated, modalHelpers,
+        getStatusStyles, getStatusIcon,
+        getCategoryIcon, formatDate,
     } = useRequestHistory();
 
     if (loading) {
-        return (
-            <main className="flex-1 p-8 bg-[#f8fafc] min-h-[80vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-4 border-[#004ac6]/20 border-t-[#004ac6] rounded-full animate-spin" />
-                    <p className="text-sm text-slate-400">Loading your requests...</p>
-                </div>
-            </main>
-        );
+        return (<PageLoader/> );
     }
 
-    if (error) {
-        return (
-            <main className="flex-1 p-8 bg-[#f8fafc] min-h-[80vh] flex items-center justify-center">
-                <div className="text-center bg-white p-8 rounded-2xl border border-red-100">
-                    <span className="material-symbols-outlined text-red-400 text-[48px] mb-3">error</span>
-                    <p className="text-slate-600 font-semibold">{error}</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="mt-4 px-4 py-2 bg-[#004ac6] text-white text-sm rounded-xl font-semibold"
-                    >
-                        Retry
-                    </button>
-                </div>
-            </main>
-        );
-    }
+   if (error) {
+  return (
+    <ErrorPage
+      message={error}
+      onRetry={fetchNotifications}
+    />
+  );
+}
 
     return (
         <main className="flex-1 p-8 overflow-y-auto bg-[#f8fafc] min-h-[80vh]">
@@ -404,7 +364,6 @@ const RequestHistory = () => {
                                         <span className="material-symbols-outlined text-[14px]">{getStatusIcon(req.status)}</span>
                                         {req.status?.replace('_', ' ').toLowerCase()}
                                     </div>
-
                                     {isPending ? (
                                         <div className="flex items-center gap-1.5 text-xs text-amber-500 font-semibold">
                                             <span className="material-symbols-outlined text-[16px]">hourglass_top</span>
@@ -424,6 +383,16 @@ const RequestHistory = () => {
                         );
                     })
                 )}
+
+                {/* ── Sentinel — infinite scroll ── */}
+                <div ref={sentinelRef} className="h-8 flex items-center justify-center mt-2">
+                    {loadingMore && (
+                        <div className="flex items-center gap-2 text-slate-400">
+                            <div className="w-4 h-4 border-2 border-slate-300 border-t-[#004ac6] rounded-full animate-spin" />
+                            <span className="text-xs font-medium">Loading more...</span>
+                        </div>
+                    )}
+                </div>
             </div>
         </main>
     );

@@ -10,6 +10,7 @@ import {
 } from '../utils/requestHelpers';
 import RequestCard from '../../../components/ui/RequestCard';
 import GradientButton from '../../../components/ui/GradientButton';
+import PageLoader from '../../../components/common/PageLoader';
 
 
 const CustomerRequest = () => {
@@ -30,6 +31,8 @@ const CustomerRequest = () => {
     setSelectedRequest,
     handleAccept,
     handleDecline,
+    loadingMore,
+    sentinelRef,
   } = useCustomerRequests();
 
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -200,17 +203,7 @@ const CustomerRequest = () => {
 
   // ── Loading ────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 rounded-full border-4 border-[#004ac6]/10" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#004ac6] animate-spin" />
-          </div>
-          <p className="text-sm font-medium text-slate-400">Loading requests…</p>
-        </div>
-      </div>
-    );
+    return (<PageLoader/>);
   }
 
   // ── Error ──────────────────────────────────────────────────
@@ -352,9 +345,8 @@ const CustomerRequest = () => {
       {/* ═══════════ MOBILE SEARCH + SORT + FILTERS ═══════════ */}
       <div className="sm:hidden bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-4">
         <div
-          className={`overflow-hidden transition-all duration-300 ${
-            mobileSearchOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
-          }`}
+          className={`overflow-hidden transition-all duration-300 ${mobileSearchOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+            }`}
         >
           <div className="p-3 pb-0">
             <div className="flex items-center bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
@@ -537,9 +529,9 @@ const CustomerRequest = () => {
             const isEmergency = req.urgency?.toLowerCase() === 'emergency';
 
             const meta = [
-              { icon: 'person',      value: req.fullName || '—', colorClass: 'text-[#004ac6]' },
-              { icon: 'location_on', value: req.location  || '—', colorClass: 'text-red-400', truncate: true },
-              { icon: 'schedule',    value: formatDate(req.createdAt) },
+              { icon: 'person', value: req.fullName || '—', colorClass: 'text-[#004ac6]' },
+              { icon: 'location_on', value: req.location || '—', colorClass: 'text-red-400', truncate: true },
+              { icon: 'schedule', value: formatDate(req.createdAt) },
               ...(req.photoUrls?.length
                 ? [{ icon: 'photo_library', value: `${req.photoUrls.length} photo${req.photoUrls.length !== 1 ? 's' : ''}` }]
                 : []),
@@ -619,12 +611,15 @@ const CustomerRequest = () => {
         </div>
       )}
 
-      <div className="h-8 sm:h-12" />
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-      `}</style>
+      {/* ── Sentinel div — IntersectionObserver watches this ── */}
+      <div ref={sentinelRef} className="h-8 sm:h-12 flex items-center justify-center">
+        {loadingMore && (
+          <div className="flex items-center gap-2 text-slate-400">
+            <div className="w-4 h-4 border-2 border-slate-300 border-t-[#004ac6] rounded-full animate-spin" />
+            <span className="text-xs font-medium">Loading more...</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

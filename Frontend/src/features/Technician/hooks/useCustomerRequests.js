@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { getMatchingRequests, acceptRequest } from '../services/technicianService';
 
 export const useCustomerRequests = () => {
@@ -8,25 +8,68 @@ export const useCustomerRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [cursor, setCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
 
-  // ── Fetch from backend ─────────────────────────────────────
+  // ref attached to a sentinel div at bottom of list
+  const sentinelRef = useRef(null);
+
+  // ── Initial fetch ──────────────────────────────────────────
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getMatchingRequests();
-        setRequests(response.data.data || []);
+        const response = await getMatchingRequests(null, 10);
+        const { requests: data, nextCursor, hasMore } = response.data.data;
+        setRequests(data || []);
+        setCursor(nextCursor);
+        setHasMore(hasMore);
       } catch (err) {
         setError('Failed to load requests. Please try again.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchRequests();
   }, []);
+
+  // ── Load more ──────────────────────────────────────────────
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const response = await getMatchingRequests(cursor, 10);
+      const { requests: data, nextCursor, hasMore: more } = response.data.data;
+      setRequests((prev) => [...prev, ...(data || [])]);
+      setCursor(nextCursor);
+      setHasMore(more);
+    } catch (err) {
+      setError('Failed to load more requests.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, loadingMore]);
+
+  // ── IntersectionObserver — fires when sentinel scrolls into view ──
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }   // trigger when 10% of sentinel is visible
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);   // re-attach whenever loadMore reference changes (cursor updated)
 
   // ── Filter + Sort ──────────────────────────────────────────
   const filteredRequests = useMemo(() => {
@@ -57,29 +100,25 @@ export const useCustomerRequests = () => {
   }, [requests, activeFilter, searchQuery, sortBy]);
 
   // ── Stats ──────────────────────────────────────────────────
-  const totalCount = requests.length;
+  const totalCount     = requests.length;
   const emergencyCount = requests.filter((r) => r.urgency?.toLowerCase() === 'emergency').length;
-  const standardCount = requests.filter((r) => r.urgency?.toLowerCase() === 'standard').length;
+  const standardCount  = requests.filter((r) => r.urgency?.toLowerCase() === 'standard').length;
 
   // ── Accept ─────────────────────────────────────────────────
   const handleAccept = async (id) => {
-  try {
-    const response = await acceptRequest(id);
-    if (response.data.success) {
-      setRequests((prev) => prev.filter((req) => req.id !== id));
-      setSelectedRequest(null);
-    } else {
-      alert(response.data.message);
+    try {
+      const response = await acceptRequest(id);
+      if (response.data.success) {
+        setRequests((prev) => prev.filter((req) => req.id !== id));
+        setSelectedRequest(null);
+      } else {
+        alert(response.data.message);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to accept request.';
+      alert(msg);
     }
-  } catch (err) {
-    // TEMPORARY DEBUG - shows exact error
-    console.log('Status:', err.response?.status);
-    console.log('Response:', err.response?.data);
-    console.log('Message:', err.message);
-    const msg = err.response?.data?.message || 'Failed to accept request.';
-    alert(msg);
-  }
-};
+  };
 
   // ── Decline ────────────────────────────────────────────────
   const handleDecline = (id) => {
@@ -88,21 +127,11 @@ export const useCustomerRequests = () => {
   };
 
   return {
-    activeFilter,
-    searchQuery,
-    sortBy,
-    selectedRequest,
-    loading,
-    error,
-    filteredRequests,
-    totalCount,
-    emergencyCount,
-    standardCount,
-    setActiveFilter,
-    setSearchQuery,
-    setSortBy,
-    setSelectedRequest,
-    handleAccept,
-    handleDecline,
+    activeFilter, searchQuery, sortBy, selectedRequest,
+    loading, loadingMore, error,
+    filteredRequests, totalCount, emergencyCount, standardCount,
+    hasMore, sentinelRef,
+    setActiveFilter, setSearchQuery, setSortBy, setSelectedRequest,
+    handleAccept, handleDecline,
   };
 };

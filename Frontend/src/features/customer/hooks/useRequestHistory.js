@@ -1,33 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getMyRequests } from '../services/requestService';
 
 const STATUS_STEPS = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED'];
 
 export const useRequestHistory = () => {
-    const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [requests, setRequests]       = useState([]);
+    const [loading, setLoading]         = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError]             = useState(null);
+    const [cursor, setCursor]           = useState(null);
+    const [hasMore, setHasMore]         = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
-    
-    // ── Rating State & Logic ──
     const [ratingOverrides, setRatingOverrides] = useState({});
+    const sentinelRef = useRef(null);
 
-    const withOverride = (req) =>
-        ratingOverrides[req.id] ? { ...req, ...ratingOverrides[req.id] } : req;
-
-    const handleRated = (requestId, { rating, review }) => {
-        setRatingOverrides((prev) => ({ ...prev, [requestId]: { rating, review } }));
-        setSelectedRequest((prev) => 
-            prev && prev.id === requestId ? { ...prev, rating, review } : prev
-        );
-    };
-
+    // ── Initial fetch ────────────────────────────────────────
     useEffect(() => {
         const fetchRequests = async () => {
             try {
                 setLoading(true);
-                const response = await getMyRequests();
-                setRequests(response.data.data || []);
+                setError(null);
+                const response = await getMyRequests(null, 10);
+                const { requests: data, nextCursor, hasMore } = response.data.data;
+                setRequests(data || []);
+                setCursor(nextCursor);
+                setHasMore(hasMore);
             } catch (err) {
                 setError("Failed to load your requests. Please try again.");
             } finally {
@@ -37,6 +34,47 @@ export const useRequestHistory = () => {
         fetchRequests();
     }, []);
 
+    // ── Load more ────────────────────────────────────────────
+    const loadMore = useCallback(async () => {
+        if (!hasMore || loadingMore) return;
+        try {
+            setLoadingMore(true);
+            const response = await getMyRequests(cursor, 10);
+            const { requests: data, nextCursor, hasMore: more } = response.data.data;
+            setRequests((prev) => [...prev, ...(data || [])]);
+            setCursor(nextCursor);
+            setHasMore(more);
+        } catch (err) {
+            setError("Failed to load more requests.");
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [cursor, hasMore, loadingMore]);
+
+    // ── IntersectionObserver ─────────────────────────────────
+    useEffect(() => {
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+        const observer = new IntersectionObserver(
+            (entries) => { if (entries[0].isIntersecting) loadMore(); },
+            { threshold: 0.1 }
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [loadMore]);
+
+    // ── Rating ───────────────────────────────────────────────
+    const withOverride = (req) =>
+        ratingOverrides[req.id] ? { ...req, ...ratingOverrides[req.id] } : req;
+
+    const handleRated = (requestId, { rating, review }) => {
+        setRatingOverrides((prev) => ({ ...prev, [requestId]: { rating, review } }));
+        setSelectedRequest((prev) =>
+            prev && prev.id === requestId ? { ...prev, rating, review } : prev
+        );
+    };
+
+    // ── Helpers ──────────────────────────────────────────────
     const getStatusStyles = (status) => {
         switch (status?.toUpperCase()) {
             case 'COMPLETED':   return 'bg-emerald-50 text-emerald-600 border-emerald-200';
@@ -77,66 +115,40 @@ export const useRequestHistory = () => {
         });
     };
 
-    const getStepIndex = (status) => STATUS_STEPS.indexOf(status?.toUpperCase());
-
+    const getStepIndex    = (status) => STATUS_STEPS.indexOf(status?.toUpperCase());
     const getProgressWidth = (stepIndex) => {
         if (stepIndex === 0) return '0%';
         if (stepIndex === 1) return '33%';
         if (stepIndex === 2) return '66%';
         return '92%';
     };
-
-    const isStepDone = (stepIndex, i) => i === stepIndex || i < stepIndex;
-    const isStepActive = (stepIndex, i) => i === stepIndex;
-
+    const isStepDone       = (stepIndex, i) => i === stepIndex || i < stepIndex;
+    const isStepActive     = (stepIndex, i) => i === stepIndex;
     const getStepCircleClass = (done, active) => {
-        const base = 'w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all';
+        const base  = 'w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all';
         const color = done ? 'bg-[#004ac6] border-[#004ac6]' : 'bg-white border-slate-200';
-        const ring = active ? 'ring-4 ring-[#004ac6]/20' : '';
+        const ring  = active ? 'ring-4 ring-[#004ac6]/20' : '';
         return `${base} ${color} ${ring}`;
     };
-
     const getStepLabelClass = (done) => {
         const base = 'text-[10px] font-bold text-center leading-tight';
         return done ? `${base} text-[#004ac6]` : `${base} text-slate-400`;
     };
 
-    // ── Constructed Helpers for Modal ──
     const modalHelpers = {
-        STATUS_STEPS,
-        getStepIndex,
-        getProgressWidth,
-        isStepDone,
-        isStepActive,
-        getStepCircleClass,
-        getStepLabelClass,
-        formatDate,
+        STATUS_STEPS, getStepIndex, getProgressWidth,
+        isStepDone, isStepActive, getStepCircleClass,
+        getStepLabelClass, formatDate,
     };
 
     return {
-        // State
-        requests,
-        loading,
-        error,
-        selectedRequest,
-        setSelectedRequest,
-
-        // Rating Logic
-        withOverride,
-        handleRated,
-        modalHelpers,
-
-        // Helpers
-        STATUS_STEPS,
-        getStatusStyles,
-        getStatusIcon,
-        getCategoryIcon,
-        formatDate,
-        getStepIndex,
-        getProgressWidth,
-        isStepDone,
-        isStepActive,
-        getStepCircleClass,
-        getStepLabelClass,
+        requests, loading, loadingMore, error,
+        hasMore, sentinelRef,
+        selectedRequest, setSelectedRequest,
+        withOverride, handleRated, modalHelpers,
+        STATUS_STEPS, getStatusStyles, getStatusIcon,
+        getCategoryIcon, formatDate, getStepIndex,
+        getProgressWidth, isStepDone, isStepActive,
+        getStepCircleClass, getStepLabelClass,
     };
 };

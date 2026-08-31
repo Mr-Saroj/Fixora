@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import useTechnicianList from '../hooks/useTechnicianList';
 import { typeIcon, ACCESS_CONFIG } from '../utils/technicianListUtils';
+import PageLoader from '../../../components/common/PageLoader';
+import ErrorPage from '../../../components/common/ErrorPage';
 
 /* ─── Toast ───────────────────────────────────────────────────────── */
 const Toast = ({ toasts }) => (
@@ -305,20 +307,14 @@ const TechnicianListPage = () => {
         </div>
 
         {/* Loading */}
-        {isLoading && (
-          <div className="flex justify-center items-center h-40">
-            <span className="material-symbols-outlined animate-spin text-[#004ac6] text-[40px]">
-              progress_activity
-            </span>
-          </div>
-        )}
+        {isLoading && <PageLoader />}
 
         {/* Error */}
         {error && !isLoading && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 flex items-center gap-3">
-            <span className="material-symbols-outlined text-[20px]">error</span>
-            {error}
-          </div>
+          <ErrorPage
+            message={error}
+            onRetry={fetchTechnicians}
+          />
         )}
 
         {/* Results count */}

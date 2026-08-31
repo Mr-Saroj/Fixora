@@ -1,6 +1,8 @@
 import React from 'react';
 import useCustomerNotifications from '../hooks/useCustomerNotifications';
 import GradientButton from '../../../components/ui/GradientButton';
+import PageLoader from '../../../components/common/PageLoader';
+import ErrorPage from '../../../components/common/ErrorPage';
 
 
 // ── Notification type styles ─────────────────────────────────────────
@@ -119,33 +121,16 @@ const CustomerNotifications = () => {
 
   // ── Loading State ─────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-[#004ac6]/20 border-t-[#004ac6] rounded-full animate-spin" />
-          <p className="text-sm text-slate-400">Loading notifications...</p>
-        </div>
-      </div>
-    );
+    return (<PageLoader />);
   }
 
   // ── Error State ───────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center space-y-3">
-          <span className="material-symbols-outlined text-[40px] text-red-300">
-            error
-          </span>
-          <p className="text-sm font-semibold text-slate-600">{error}</p>
-          <button
-            onClick={fetchNotifications}
-            className="px-4 py-2 text-xs font-bold text-white bg-[#004ac6] rounded-lg hover:bg-[#004ac6]/90 transition-all"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
+      <ErrorPage
+        message={error}
+        onRetry={fetchNotifications}
+      />
     );
   }
 

@@ -130,6 +130,36 @@ public class AuthServiceImpl implements AuthService {
 
 
         // ============================================
+        // TECHNICIAN LOGIN ACCESS CHECK
+        // (Only applies to technicians — customers/admin skip this)
+        // ============================================
+
+        if (user.getRole() == Role.TECHNICIAN) {
+
+            // Treat null as PENDING too, in case older records have no value set
+            LoginAccess access = user.getLoginAccess();
+
+            if (access == LoginAccess.BLOCK) {
+                return new ApiResponse<>(
+                        false,
+                        "Your account has been blocked by admin. Please contact support.",
+                        null
+                );
+            }
+
+            if (access == null || access == LoginAccess.PENDING) {
+                return new ApiResponse<>(
+                        false,
+                        "Your account is pending approval. Please wait for admin verification.",
+                        null
+                );
+            }
+
+            // access == LoginAccess.ALLOW → fall through to normal login below
+        }
+
+
+        // ============================================
         // JWT WITH ROLE
         // ============================================
 

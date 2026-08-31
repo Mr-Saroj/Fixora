@@ -28,16 +28,22 @@ public class ServiceRequestController {
 
     // Technician sees only requests matching their technicianType
     @GetMapping("/technician")
-    public ResponseEntity<ApiResponse<?>> getRequestsForTechnician(Authentication authentication) {
+    public ResponseEntity<ApiResponse<?>> getRequestsForTechnician(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
         String email = authentication.getName();
-        return ResponseEntity.ok(requestService.getRequestsForTechnician(email));
+        return ResponseEntity.ok(requestService.getRequestsForTechnician(email, cursor, size));
     }
 
     // Customer sees their own submitted requests
     @GetMapping("/my-requests")
-    public ResponseEntity<ApiResponse<?>> getMyRequests(Authentication authentication) {
+    public ResponseEntity<ApiResponse<?>> getMyRequests(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
         String email = authentication.getName();
-        return ResponseEntity.ok(requestService.getMyRequests(email));
+        return ResponseEntity.ok(requestService.getMyRequests(email, cursor, size));
     }
 
     @PatchMapping("/{id}/accept")
@@ -50,9 +56,12 @@ public class ServiceRequestController {
 
     // Technician's own accepted/in-progress/completed jobs
     @GetMapping("/my-jobs")
-    public ResponseEntity<ApiResponse<?>> getMyJobs(Authentication authentication) {
+    public ResponseEntity<ApiResponse<?>> getMyJobs(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
         String email = authentication.getName();
-        return ResponseEntity.ok(requestService.getMyJobs(email));
+        return ResponseEntity.ok(requestService.getMyJobs(email, cursor, size));
     }
 
     // Technician updates status of a job they own

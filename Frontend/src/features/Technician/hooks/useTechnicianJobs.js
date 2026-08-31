@@ -1,37 +1,36 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { getMyJobs, updateJobStatus } from '../services/technicianService';
 
 // ── Backend status -> UI status ─────────────────────────────
 const STATUS_MAP = {
-    ACCEPTED: 'scheduled',
+    ACCEPTED:    'scheduled',
     IN_PROGRESS: 'in-progress',
-    COMPLETED: 'completed',
+    COMPLETED:   'completed',
 };
 
 const STEP_TO_STATUS = ['ACCEPTED', 'IN_PROGRESS', 'COMPLETED'];
 
 const steps = [
     { icon: 'assignment_turned_in', label: 'Accepted' },
-    { icon: 'engineering', label: 'In Progress' },
-    { icon: 'task_alt', label: 'Completed' },
+    { icon: 'engineering',          label: 'In Progress' },
+    { icon: 'task_alt',             label: 'Completed' },
 ];
 
 const filters = [
-    { key: 'all', label: 'All Jobs', icon: 'list_alt' },
+    { key: 'all',         label: 'All Jobs',    icon: 'list_alt' },
     { key: 'in-progress', label: 'In Progress', icon: 'engineering' },
-    { key: 'scheduled', label: 'Scheduled', icon: 'event' },
-    { key: 'completed', label: 'Completed', icon: 'check_circle' },
+    { key: 'scheduled',   label: 'Scheduled',   icon: 'event' },
+    { key: 'completed',   label: 'Completed',   icon: 'check_circle' },
 ];
 
 const formatDate = (iso) => {
     if (!iso) return '—';
     try {
         return new Date(iso).toLocaleString(undefined, {
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+            month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
         });
-    } catch {
-        return iso;
-    }
+    } catch { return iso; }
 };
 
 const capitalize = (str) =>
@@ -40,61 +39,96 @@ const capitalize = (str) =>
 const mapJob = (req) => {
     const currentStep = Math.max(0, STEP_TO_STATUS.indexOf(req.status));
     return {
-        id: req.id,
-        name: req.fullName,
-        phone: req.mobileNumber,
-        category: req.category ? capitalize(req.category) : 'General',
-        issue: req.description,
-        address: req.location,
-        urgency: req.urgency ? capitalize(req.urgency) : 'Standard',
-        status: STATUS_MAP[req.status] || 'scheduled',
-        rawStatus: req.status,
+        id:          req.id,
+        name:        req.fullName,
+        phone:       req.mobileNumber,
+        category:    req.category ? capitalize(req.category) : 'General',
+        issue:       req.description,
+        address:     req.location,
+        urgency:     req.urgency ? capitalize(req.urgency) : 'Standard',
+        status:      STATUS_MAP[req.status] || 'scheduled',
+        rawStatus:   req.status,
         currentStep,
-        createdAt: req.createdAt,
-        photos: req.photoUrls ? req.photoUrls.length : 0,
-        photoUrls: req.photoUrls || [],
-        rating: req.rating || null,
-        review: req.review || null,
+        createdAt:   req.createdAt,
+        photos:      req.photoUrls ? req.photoUrls.length : 0,
+        photoUrls:   req.photoUrls || [],
+        rating:      req.rating  || null,
+        review:      req.review  || null,
     };
 };
 
 export const useTechnicianJobs = () => {
-    const [jobs, setJobs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [updatingId, setUpdatingId] = useState(null);
+    const [jobs, setJobs]               = useState([]);
+    const [loading, setLoading]         = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError]             = useState(null);
+    const [cursor, setCursor]           = useState(null);
+    const [hasMore, setHasMore]         = useState(false);
+    const [updatingId, setUpdatingId]   = useState(null);
 
-    const [activeFilter, setActiveFilter] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedJob, setSelectedJob] = useState(null);
+    const [activeFilter, setActiveFilter]             = useState('all');
+    const [searchQuery, setSearchQuery]               = useState('');
+    const [selectedJob, setSelectedJob]               = useState(null);
     const [showCompleteConfirm, setShowCompleteConfirm] = useState(null);
 
-    // ── Fetch technician's jobs ──────────────────────────────
+    const sentinelRef = useRef(null);
+
+    // ── Initial fetch ────────────────────────────────────────
     const fetchJobs = useCallback(async () => {
         setLoading(true);
         setError(null);
+        setCursor(null);
+        setJobs([]);
         try {
-            const res = await getMyJobs();
+            const res  = await getMyJobs(null, 10);
             const body = res.data;
             if (!body.success) {
                 setError(body.message || 'Failed to load jobs');
-                setJobs([]);
                 return;
             }
-            const list = Array.isArray(body.data) ? body.data : [];
-            setJobs(list.map(mapJob));
+            const { requests: data, nextCursor, hasMore } = body.data;
+            setJobs((data || []).map(mapJob));
+            setCursor(nextCursor);
+            setHasMore(hasMore);
         } catch (err) {
-            setError(
-                err?.response?.data?.message || 'Something went wrong loading your jobs.'
-            );
+            setError(err?.response?.data?.message || 'Something went wrong loading your jobs.');
         } finally {
             setLoading(false);
         }
     }, []);
 
+    useEffect(() => { fetchJobs(); }, [fetchJobs]);
+
+    // ── Load more ────────────────────────────────────────────
+    const loadMore = useCallback(async () => {
+        if (!hasMore || loadingMore) return;
+        try {
+            setLoadingMore(true);
+            const res  = await getMyJobs(cursor, 10);
+            const body = res.data;
+            if (!body.success) return;
+            const { requests: data, nextCursor, hasMore: more } = body.data;
+            setJobs((prev) => [...prev, ...(data || []).map(mapJob)]);
+            setCursor(nextCursor);
+            setHasMore(more);
+        } catch (err) {
+            setError('Failed to load more jobs.');
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [cursor, hasMore, loadingMore]);
+
+    // ── IntersectionObserver ─────────────────────────────────
     useEffect(() => {
-        fetchJobs();
-    }, [fetchJobs]);
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+        const observer = new IntersectionObserver(
+            (entries) => { if (entries[0].isIntersecting) loadMore(); },
+            { threshold: 0.1 }
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [loadMore]);
 
     // ── Advance status via API ───────────────────────────────
     const advanceJob = async (jobId) => {
@@ -104,12 +138,10 @@ export const useTechnicianJobs = () => {
         const nextStatus = STEP_TO_STATUS[job.currentStep + 1];
         setUpdatingId(jobId);
         try {
-            const res = await updateJobStatus(jobId, nextStatus);
+            const res  = await updateJobStatus(jobId, nextStatus);
             const body = res.data;
-            if (!body.success) {
-                alert(body.message || 'Could not update status');
-                return;
-            }
+            if (!body.success) { alert(body.message || 'Could not update status'); return; }
+
             setJobs((prev) =>
                 prev.map((j) =>
                     j.id === jobId
@@ -133,28 +165,36 @@ export const useTechnicianJobs = () => {
     // ── UI Helpers ───────────────────────────────────────────
     const getCategoryColor = (category) => {
         const map = {
-            Plumbing: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' },
-            Electrical: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
-            Hvac: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' },
+            Plumbing:   { bg: 'bg-blue-50',   text: 'text-blue-600',   border: 'border-blue-100' },
+            Electrical: { bg: 'bg-amber-50',  text: 'text-amber-600',  border: 'border-amber-100' },
+            Hvac:       { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' },
+            Carpenter:  { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100' },
+            Painter:    { bg: 'bg-pink-50',   text: 'text-pink-600',   border: 'border-pink-100' },
         };
         return map[category] || { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-100' };
     };
 
     const getCategoryIcon = (category) => {
-        const map = { Plumbing: 'water_drop', Electrical: 'bolt', Hvac: 'ac_unit' };
+        const map = {
+            Plumbing:   'water_drop',
+            Electrical: 'bolt',
+            Hvac:       'ac_unit',
+            Carpenter:  'carpenter',
+            Painter:    'format_paint',
+        };
         return map[category] || 'build';
     };
 
     const getStatusConfig = (status) => {
         const map = {
-            'in-progress': { label: 'In Progress', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', icon: 'engineering' },
-            scheduled: { label: 'Accepted', bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', icon: 'event' },
-            completed: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', icon: 'check_circle' },
+            'in-progress': { label: 'In Progress', bg: 'bg-blue-50',    text: 'text-blue-600',    border: 'border-blue-200',    icon: 'engineering' },
+            scheduled:     { label: 'Accepted',    bg: 'bg-purple-50',  text: 'text-purple-600',  border: 'border-purple-200',  icon: 'event' },
+            completed:     { label: 'Completed',   bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', icon: 'check_circle' },
         };
         return map[status] || map.scheduled;
     };
 
-    // ── Memoized Data ────────────────────────────────────────
+    // ── Filtered jobs ────────────────────────────────────────
     const filteredJobs = useMemo(() => {
         let result = [...jobs];
         if (activeFilter !== 'all') {
@@ -164,10 +204,10 @@ export const useTechnicianJobs = () => {
             const q = searchQuery.toLowerCase();
             result = result.filter(
                 (job) =>
-                    job.name?.toLowerCase().includes(q) ||
-                    job.issue?.toLowerCase().includes(q) ||
+                    job.name?.toLowerCase().includes(q)     ||
+                    job.issue?.toLowerCase().includes(q)    ||
                     job.category?.toLowerCase().includes(q) ||
-                    job.id?.toLowerCase().includes(q) ||
+                    job.id?.toLowerCase().includes(q)       ||
                     job.address?.toLowerCase().includes(q)
             );
         }
@@ -175,41 +215,22 @@ export const useTechnicianJobs = () => {
     }, [jobs, activeFilter, searchQuery]);
 
     const counts = {
-        all: jobs.length,
+        all:          jobs.length,
         'in-progress': jobs.filter((j) => j.status === 'in-progress').length,
-        scheduled: jobs.filter((j) => j.status === 'scheduled').length,
-        completed: jobs.filter((j) => j.status === 'completed').length,
+        scheduled:    jobs.filter((j) => j.status === 'scheduled').length,
+        completed:    jobs.filter((j) => j.status === 'completed').length,
     };
 
     return {
-        // State
-        jobs,
-        loading,
-        error,
-        updatingId,
-        activeFilter,
-        setActiveFilter,
-        searchQuery,
-        setSearchQuery,
-        selectedJob,
-        setSelectedJob,
-        showCompleteConfirm,
-        setShowCompleteConfirm,
-
-        // Data
-        filteredJobs,
-        counts,
-
-        // Actions
-        fetchJobs,
-        advanceJob,
-
-        // Constants & Helpers
-        steps,
-        filters,
-        formatDate,
-        getCategoryColor,
-        getCategoryIcon,
-        getStatusConfig,
+        jobs, loading, loadingMore, error,
+        hasMore, sentinelRef,
+        updatingId, activeFilter, setActiveFilter,
+        searchQuery, setSearchQuery,
+        selectedJob, setSelectedJob,
+        showCompleteConfirm, setShowCompleteConfirm,
+        filteredJobs, counts,
+        fetchJobs, advanceJob,
+        steps, filters, formatDate,
+        getCategoryColor, getCategoryIcon, getStatusConfig,
     };
 };

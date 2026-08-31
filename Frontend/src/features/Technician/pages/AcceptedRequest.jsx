@@ -2,6 +2,8 @@ import React from 'react';
 import { useTechnicianJobs } from '../hooks/useTechnicianJobs';
 import RequestCard from '../../../components/ui/RequestCard';
 import GradientButton from '../../../components/ui/GradientButton';
+import ErrorPage from '../../../components/common/ErrorPage';
+import PageLoader from '../../../components/common/PageLoader';
 
 // ── Mini Stepper Sub-component ─────────────────────────
 const MiniStepper = ({ currentStep, status, steps }) => {
@@ -239,38 +241,17 @@ const AcceptedRequest = () => {
   const hook = useTechnicianJobs();
 
   const {
-    loading, error, filteredJobs, counts, fetchJobs,
+    loading, loadingMore, error, filteredJobs, counts, fetchJobs,
     activeFilter, setActiveFilter, searchQuery, setSearchQuery,
     steps, filters, getCategoryColor, getCategoryIcon, getStatusConfig,
-    formatDate, updatingId, advanceJob, setSelectedJob
+    formatDate, updatingId, advanceJob, setSelectedJob,
+    hasMore, sentinelRef,
   } = hook;
 
   // ── Loading ────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="flex flex-col items-center gap-3 text-slate-400">
-          <span className="material-symbols-outlined text-[32px] animate-spin">progress_activity</span>
-          <p className="text-sm font-medium">Loading your jobs…</p>
-        </div>
-      </div>
-    );
-  }
-
+  if (loading) return <PageLoader />;
   // ── Error ──────────────────────────────────────────────────
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh] p-4">
-        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 sm:p-10 text-center max-w-md w-full">
-          <span className="material-symbols-outlined text-[36px] text-red-400">error</span>
-          <p className="text-sm font-bold text-slate-700 mt-3">{error}</p>
-          <GradientButton onClick={fetchJobs} className="mt-4">
-            Retry
-          </GradientButton>
-        </div>
-      </div>
-    );
-  }
+  if (error) return <ErrorPage message={error} onRetry={fetchJobs} />;
 
   // ── Main ───────────────────────────────────────────────────
   return (
@@ -517,8 +498,15 @@ const AcceptedRequest = () => {
         </div>
       )}
 
-      {/* Bottom spacer for mobile scroll comfort */}
-      <div className="h-4 sm:h-8" />
+      {/* ── Sentinel — infinite scroll ── */}
+      <div ref={sentinelRef} className="h-4 sm:h-8 flex items-center justify-center">
+        {loadingMore && (
+          <div className="flex items-center gap-2 text-slate-400">
+            <div className="w-4 h-4 border-2 border-slate-300 border-t-[#004ac6] rounded-full animate-spin" />
+            <span className="text-xs font-medium">Loading more...</span>
+          </div>
+        )}
+      </div>
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

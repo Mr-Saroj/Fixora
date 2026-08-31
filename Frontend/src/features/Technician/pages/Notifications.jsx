@@ -8,6 +8,7 @@ import {
   getNotificationType,
   getTypeStyle,
 } from '../utils/notificationUtils';
+import PageLoader from '../../../components/common/PageLoader';
 
 // ── Main Component ────────────────────────────────────────────────────
 const Notifications = () => {
@@ -161,14 +162,7 @@ const Notifications = () => {
 
   // ── Loading State ─────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-[#004ac6]/20 border-t-[#004ac6] rounded-full animate-spin" />
-          <p className="text-sm text-slate-400">Loading notifications...</p>
-        </div>
-      </div>
-    );
+    return (<PageLoader />);
   }
 
   // ── Error State ───────────────────────────────────────────────────
@@ -346,8 +340,8 @@ const Notifications = () => {
                       <div className="flex items-start justify-between gap-2">
                         <h4
                           className={`text-[13px] sm:text-sm leading-snug line-clamp-1 ${notification.read
-                              ? 'font-medium text-slate-600'
-                              : 'font-bold text-slate-800'
+                            ? 'font-medium text-slate-600'
+                            : 'font-bold text-slate-800'
                             }`}
                         >
                           {notification.title}

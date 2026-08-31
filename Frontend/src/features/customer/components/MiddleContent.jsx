@@ -7,7 +7,8 @@ import {
   formatDate,
 } from '../hooks/useDashboardData';
 import GradientButton from '../../../components/ui/GradientButton';
-
+import PageLoader from '../../../components/common/PageLoader';
+import ErrorPage from '../../../components/common/ErrorPage';
 
 const MiddleContent = () => {
   const {
@@ -26,6 +27,19 @@ const MiddleContent = () => {
     handleShareLocation,
   } = useDashboardData();
 
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  if (error) {
+    return (
+      <ErrorPage
+        message={error}
+        onRetry={fetchRequests}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
 
@@ -38,13 +52,12 @@ const MiddleContent = () => {
           >
             <div className="flex justify-between items-start mb-3 sm:mb-4">
               <div
-                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-300 ${
-                  stat.color === 'blue'
+                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-300 ${stat.color === 'blue'
                     ? 'bg-blue-50 text-blue-600'
                     : stat.color === 'emerald'
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-amber-50 text-amber-600'
-                }`}
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : 'bg-amber-50 text-amber-600'
+                  }`}
               >
                 <span className="material-symbols-outlined text-[20px] sm:text-[24px]">
                   {stat.icon}
@@ -162,10 +175,9 @@ const MiddleContent = () => {
                         onClick={handleShareLocation}
                         disabled={locationStatus === 'sharing'}
                         className={`w-full py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200
-                          ${
-                            locationStatus === 'shared'
-                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                              : 'bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm hover:shadow-md disabled:opacity-60'
+                          ${locationStatus === 'shared'
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            : 'bg-gradient-to-r from-[#004ac6] to-[#57dffe] text-white shadow-sm hover:shadow-md disabled:opacity-60'
                           }`}
                       >
                         <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
@@ -174,8 +186,8 @@ const MiddleContent = () => {
                         {locationStatus === 'sharing'
                           ? 'Getting location…'
                           : locationStatus === 'shared'
-                          ? 'Opened in WhatsApp'
-                          : 'Share Live Location'}
+                            ? 'Opened in WhatsApp'
+                            : 'Share Live Location'}
                       </button>
                       {locationStatus === 'error' && (
                         <p className="text-[11px] sm:text-xs text-red-500 mt-2 text-center">
@@ -259,16 +271,14 @@ const MiddleContent = () => {
                           return (
                             <div
                               key={step}
-                              className={`relative z-10 flex flex-col items-center text-center w-[60px] ${
-                                pending ? 'opacity-40' : ''
-                              }`}
+                              className={`relative z-10 flex flex-col items-center text-center w-[60px] ${pending ? 'opacity-40' : ''
+                                }`}
                             >
                               <div
                                 className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-white transition-all duration-300
-                                  ${
-                                    active
-                                      ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] ring-3 ring-[#004ac6]/15 shadow-md shadow-[#004ac6]/30'
-                                      : done
+                                  ${active
+                                    ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] ring-3 ring-[#004ac6]/15 shadow-md shadow-[#004ac6]/30'
+                                    : done
                                       ? 'bg-[#004ac6]'
                                       : 'bg-slate-200 text-slate-400'
                                   }`}
@@ -278,11 +288,10 @@ const MiddleContent = () => {
                                 </span>
                               </div>
                               <span
-                                className={`text-[9px] mt-1.5 font-medium leading-tight ${
-                                  active
+                                className={`text-[9px] mt-1.5 font-medium leading-tight ${active
                                     ? 'text-[#004ac6] font-bold'
                                     : 'text-slate-500'
-                                }`}
+                                  }`}
                               >
                                 {labels[step]}
                               </span>
@@ -312,16 +321,14 @@ const MiddleContent = () => {
                           return (
                             <div
                               key={step}
-                              className={`relative z-10 flex flex-col items-center text-center w-20 ${
-                                pending ? 'opacity-40' : ''
-                              }`}
+                              className={`relative z-10 flex flex-col items-center text-center w-20 ${pending ? 'opacity-40' : ''
+                                }`}
                             >
                               <div
                                 className={`w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300 shadow-md
-                                  ${
-                                    active
-                                      ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 shadow-[0_8px_20px_-4px_rgba(0,74,198,0.4)]'
-                                      : done
+                                  ${active
+                                    ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 shadow-[0_8px_20px_-4px_rgba(0,74,198,0.4)]'
+                                    : done
                                       ? 'bg-[#004ac6]'
                                       : 'bg-slate-200 text-slate-400 shadow-none'
                                   }`}
@@ -331,11 +338,10 @@ const MiddleContent = () => {
                                 </span>
                               </div>
                               <span
-                                className={`text-xs mt-2 font-medium ${
-                                  active
+                                className={`text-xs mt-2 font-medium ${active
                                     ? 'text-[#004ac6] font-bold'
                                     : 'text-slate-500'
-                                }`}
+                                  }`}
                               >
                                 {labels[step]}
                               </span>
@@ -413,10 +419,9 @@ const MiddleContent = () => {
                     type="button"
                     onClick={() => setSelectedUrgency('standard')}
                     className={`flex-1 py-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-200 border
-                      ${
-                        selectedUrgency === 'standard'
-                          ? 'bg-[#004ac6]/10 text-[#004ac6] border-[#004ac6]/30 shadow-sm'
-                          : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'
+                      ${selectedUrgency === 'standard'
+                        ? 'bg-[#004ac6]/10 text-[#004ac6] border-[#004ac6]/30 shadow-sm'
+                        : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'
                       }`}
                   >
                     Standard
@@ -425,10 +430,9 @@ const MiddleContent = () => {
                     type="button"
                     onClick={() => setSelectedUrgency('emergency')}
                     className={`flex-1 py-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all duration-200 border
-                      ${
-                        selectedUrgency === 'emergency'
-                          ? 'bg-red-50 text-red-500 border-red-200 shadow-sm'
-                          : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'
+                      ${selectedUrgency === 'emergency'
+                        ? 'bg-red-50 text-red-500 border-red-200 shadow-sm'
+                        : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'
                       }`}
                   >
                     Emergency
@@ -506,11 +510,10 @@ const MiddleContent = () => {
                       </p>
                     </div>
                     <span
-                      className={`shrink-0 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 rounded-lg ${
-                        isCompleted
+                      className={`shrink-0 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 rounded-lg ${isCompleted
                           ? 'text-emerald-600 bg-emerald-50'
                           : 'text-slate-500 bg-slate-50'
-                      }`}
+                        }`}
                     >
                       {req.status?.replace('_', ' ')}
                     </span>

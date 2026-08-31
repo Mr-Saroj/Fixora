@@ -15,8 +15,9 @@ import com.saroj.fixora.repository.UserRepository;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.service.ServiceRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,28 +42,23 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private UserRepository userRepository;
 
     @Autowired
-    private CacheManager cacheManager;
+    private RedisTemplate<String, String> redisTemplate; // for distributed lock only
 
     @Autowired
-    private RedisTemplate<String, String> redisTemplate;        // for distributed lock
-
-    @Autowired
-    private KafkaTemplate<String, RequestEvent> kafkaTemplate;  // for publishing events
+    private KafkaTemplate<String, RequestEvent> kafkaTemplate;
 
     private static final String TOPIC = "request-events";
 
-    private static final Map<RequestStatus, RequestStatus> ALLOWED_NEXT
-            = new EnumMap<>(RequestStatus.class);
+    private static final Map<RequestStatus, RequestStatus> ALLOWED_NEXT = new EnumMap<>(RequestStatus.class);
     static {
-        ALLOWED_NEXT.put(RequestStatus.ACCEPTED,    RequestStatus.IN_PROGRESS);
+        ALLOWED_NEXT.put(RequestStatus.ACCEPTED, RequestStatus.IN_PROGRESS);
         ALLOWED_NEXT.put(RequestStatus.IN_PROGRESS, RequestStatus.COMPLETED);
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // CUSTOMER CREATES REQUEST
     // → Save to MongoDB
-    // → Publish REQUEST_CREATED to Kafka
-    // → Kafka consumer evicts + rebuilds Redis cache
+    // → Publish REQUEST_CREATED to Kafka (for notifications)
     // ─────────────────────────────────────────────────────────────────────
     @Override
     public ApiResponse<?> createRequest(ServiceRequestDTO dto, String customerEmail) {
@@ -84,27 +81,24 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         ServiceRequest saved = requestRepository.save(request);
 
-        // publish to Kafka → consumer will update Redis cache
         kafkaTemplate.send(TOPIC, new RequestEvent(
                 "REQUEST_CREATED",
                 saved.getId(),
                 saved.getCategory().name(),
-                saved.getLocation(),        // ← ADD location ✅
-                null
-        ));
+                saved.getLocation(),
+                null));
 
         return new ApiResponse<>(true, "Service request created successfully!", saved.getId());
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // TECHNICIAN SEES AVAILABLE REQUESTS
-    // → Check Redis cache first (key = "ELECTRICIAN" / "PLUMBER" etc)
-    // → Cache HIT  = return from Redis instantly (no MongoDB)
-    // → Cache MISS = query MongoDB → store in Redis → return
+    // → Cursor-based pagination (10 per page)
+    // → cursor = createdAt of last item seen by client
+    // → No Redis cache — direct MongoDB query
     // ─────────────────────────────────────────────────────────────────────
-    
     @Override
-    public ApiResponse<?> getRequestsForTechnician(String technicianEmail) {
+    public ApiResponse<?> getRequestsForTechnician(String technicianEmail, String cursor, int size) {
         User technician = userRepository.findByEmail(technicianEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
@@ -112,29 +106,51 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             throw new ResourceNotFoundException("This user has no technician type set");
         }
 
-        String cacheKey = technician.getTechnicianType().name(); // "ELECTRICIAN" etc
+        List<ServiceRequest> items;
 
-        // STEP 1: Check Redis cache first
-        var cache = cacheManager.getCache("requests");
-        if (cache != null) {
-            var cached = cache.get(cacheKey);
-            if (cached != null) {
-                // CACHE HIT → return from Redis instantly
-                return new ApiResponse<>(true, "Requests fetched successfully!", cached.get());
-            }
+        if (cursor != null && !cursor.isBlank()) {
+            // cursor page — fetch records older than cursor createdAt
+            LocalDateTime cursorTime = LocalDateTime.parse(cursor);
+
+            // fetch a bit more than size to check hasMore
+            Pageable pageable = PageRequest.of(0, size + 1);
+            Page<ServiceRequest> page = requestRepository
+                    .findByCategoryAndStatusOrderByCreatedAtDesc(
+                            technician.getTechnicianType(), RequestStatus.PENDING, pageable);
+
+            // filter only records strictly before cursorTime
+            items = page.getContent().stream()
+                    .filter(r -> r.getCreatedAt().isBefore(cursorTime))
+                    .limit(size + 1)
+                    .toList();
+        } else {
+            // first page — no cursor
+            Pageable pageable = PageRequest.of(0, size + 1);
+            Page<ServiceRequest> page = requestRepository
+                    .findByCategoryAndStatusOrderByCreatedAtDesc(
+                            technician.getTechnicianType(), RequestStatus.PENDING, pageable);
+            items = page.getContent();
         }
 
-        // STEP 2: CACHE MISS → query MongoDB
-        List<ServiceRequest> requests = requestRepository.findByCategoryAndStatus(
-                technician.getTechnicianType(), RequestStatus.PENDING);
+        // check if more pages exist
+        boolean hasMore = items.size() > size;
 
-        // STEP 3: Store list in Redis
-        if (cache != null) {
-            cache.put(cacheKey, requests);
-        }
+        // trim to actual page size
+        List<ServiceRequest> pageItems = hasMore ? items.subList(0, size) : items;
 
-        return new ApiResponse<>(true, "Requests fetched successfully!", requests);
+        // nextCursor = createdAt of last item in this page
+        String nextCursor = (hasMore && !pageItems.isEmpty())
+                ? pageItems.get(pageItems.size() - 1).getCreatedAt().toString()
+                : null;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("requests", pageItems);
+        result.put("nextCursor", nextCursor);
+        result.put("hasMore", hasMore);
+
+        return new ApiResponse<>(true, "Requests fetched successfully!", result);
     }
+
     // ─────────────────────────────────────────────────────────────────────
     // TECHNICIAN ACCEPTS REQUEST
     // → Redis distributed lock (prevent double accept)
@@ -142,8 +158,6 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     // → MongoDB double check (status must be PENDING)
     // → Location check
     // → Save to MongoDB
-    // → Publish REQUEST_ACCEPTED to Kafka
-    // → Kafka consumer evicts + rebuilds Redis cache
     // → Release lock
     // ─────────────────────────────────────────────────────────────────────
     @Override
@@ -169,8 +183,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
             if (technician.getSubscriptionEndDate() == null) {
                 return new ApiResponse<>(false,
-                        "No active subscription found. Please claim a subscription plan.",
-                        null);
+                        "No active subscription found. Please claim a subscription plan.", null);
             }
 
             if (!technician.getSubscriptionEndDate().isAfter(today)) {
@@ -178,7 +191,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                         .format(DateTimeFormatter.ofPattern("MMM dd, yyyy"));
                 return new ApiResponse<>(false,
                         "Your subscription expired on " + expiredOn +
-                        ". Please renew your plan to accept service requests.", null);
+                                ". Please renew your plan to accept service requests.",
+                        null);
             }
 
             // STEP 4: Find request and double check status in MongoDB
@@ -192,23 +206,24 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
             // STEP 5: Location check
             String customerLocation = request.getLocation() != null
-                    ? request.getLocation().toLowerCase() : "";
+                    ? request.getLocation().toLowerCase()
+                    : "";
 
-            String techCity     = technician.getCity()     != null ? technician.getCity().toLowerCase()     : "";
+            String techCity = technician.getCity() != null ? technician.getCity().toLowerCase() : "";
             String techDistrict = technician.getDistrict() != null ? technician.getDistrict().toLowerCase() : "";
-            String techState    = technician.getState()    != null ? technician.getState().toLowerCase()    : "";
-            String techPin      = technician.getPinCode()  != null ? technician.getPinCode().toLowerCase()  : "";
+            String techState = technician.getState() != null ? technician.getState().toLowerCase() : "";
+            String techPin = technician.getPinCode() != null ? technician.getPinCode().toLowerCase() : "";
 
-            boolean locationMatch =
-                    (!techCity.isEmpty()     && customerLocation.contains(techCity))     ||
+            boolean locationMatch = (!techCity.isEmpty() && customerLocation.contains(techCity)) ||
                     (!techDistrict.isEmpty() && customerLocation.contains(techDistrict)) ||
-                    (!techState.isEmpty()    && customerLocation.contains(techState))    ||
-                    (!techPin.isEmpty()      && customerLocation.contains(techPin));
+                    (!techState.isEmpty() && customerLocation.contains(techState)) ||
+                    (!techPin.isEmpty() && customerLocation.contains(techPin));
 
             if (!locationMatch) {
                 return new ApiResponse<>(false,
-                    "Your service area (" + technician.getCity() + ", " + technician.getDistrict() +
-                    ") does not match the customer's location.", null);
+                        "Your service area (" + technician.getCity() + ", " + technician.getDistrict() +
+                                ") does not match the customer's location.",
+                        null);
             }
 
             // STEP 6: Save to MongoDB
@@ -217,69 +232,156 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             request.setAcceptedAt(LocalDateTime.now());
             requestRepository.save(request);
 
-            // STEP 7: Publish to Kafka
-            // → Kafka consumer will evict + rebuild Redis cache
-            // → req1 disappears from available list for ALL technicians
-            kafkaTemplate.send(TOPIC, new RequestEvent(
-                    "REQUEST_ACCEPTED",
-                    requestId,
-                    request.getCategory().name(),
-                    request.getLocation(),      // ← FIX
-                    technicianEmail
-            ));
-
             return new ApiResponse<>(true, "Job accepted successfully!", null);
 
         } finally {
-            // STEP 8: Always release lock
+            // STEP 7: Always release lock
             redisTemplate.delete(lockKey);
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // BELOW METHODS NOT MODIFIED — exactly as your original code
+    // CUSTOMER SEES THEIR OWN REQUESTS
     // ─────────────────────────────────────────────────────────────────────
+    private static final Map<RequestStatus, Integer> STATUS_PRIORITY = new EnumMap<>(RequestStatus.class);
+    static {
+        STATUS_PRIORITY.put(RequestStatus.IN_PROGRESS, 1);
+        STATUS_PRIORITY.put(RequestStatus.ACCEPTED, 2);
+        STATUS_PRIORITY.put(RequestStatus.PENDING, 3);
+        STATUS_PRIORITY.put(RequestStatus.CANCELLED, 4);
+        STATUS_PRIORITY.put(RequestStatus.COMPLETED, 5);
+    }
 
     @Override
-    public ApiResponse<?> getMyRequests(String email) {
+    public ApiResponse<?> getMyRequests(String email, String cursor, int size) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<ServiceRequest> requests = requestRepository.findByCustomerId(user.getId());
+        // fetch all customer requests from MongoDB
+        List<ServiceRequest> all = requestRepository.findByCustomerId(user.getId());
 
-        if (requests.isEmpty()) {
-            return new ApiResponse<>(false, "No service requests found", null);
+        if (all.isEmpty()) {
+            Map<String, Object> empty = new HashMap<>();
+            empty.put("requests", List.of());
+            empty.put("nextCursor", null);
+            empty.put("hasMore", false);
+            return new ApiResponse<>(true, "No service requests found", empty);
         }
 
-        List<ServiceRequestResponseDTO> result = requests.stream()
+        // sort by priority → then newest first within same priority
+        List<ServiceRequest> sorted = all.stream()
+                .sorted((a, b) -> {
+                    int pa = STATUS_PRIORITY.getOrDefault(a.getStatus(), 99);
+                    int pb = STATUS_PRIORITY.getOrDefault(b.getStatus(), 99);
+                    if (pa != pb)
+                        return Integer.compare(pa, pb);
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .toList();
+
+        // cursor = startIndex (offset into sorted list)
+        int startIndex = 0;
+        if (cursor != null && !cursor.isBlank()) {
+            try {
+                startIndex = Integer.parseInt(cursor);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        // slice page
+        int endIndex = Math.min(startIndex + size, sorted.size());
+        List<ServiceRequest> pageItems = startIndex >= sorted.size()
+                ? List.of()
+                : sorted.subList(startIndex, endIndex);
+
+        boolean hasMore = endIndex < sorted.size();
+        String nextCursor = hasMore ? String.valueOf(endIndex) : null;
+
+        List<ServiceRequestResponseDTO> result = pageItems.stream()
                 .map(this::toResponseDTOWithTechnician)
                 .toList();
 
-        return new ApiResponse<>(true, "Requests fetched successfully", result);
+        Map<String, Object> response = new HashMap<>();
+        response.put("requests", result);
+        response.put("nextCursor", nextCursor);
+        response.put("hasMore", hasMore);
+
+        return new ApiResponse<>(true, "Requests fetched successfully", response);
     }
 
-    @Override
-    public ApiResponse<?> getMyJobs(String technicianEmail) {
-        User technician = userRepository.findByEmail(technicianEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
+    // ─────────────────────────────────────────────────────────────────────
+    // TECHNICIAN SEES THEIR OWN ACCEPTED JOBS
+    // ─────────────────────────────────────────────────────────────────────
+    private static final Map<RequestStatus, Integer> JOB_PRIORITY
+    = new EnumMap<>(RequestStatus.class);
+static {
+JOB_PRIORITY.put(RequestStatus.IN_PROGRESS, 1);
+JOB_PRIORITY.put(RequestStatus.ACCEPTED,    2);
+JOB_PRIORITY.put(RequestStatus.COMPLETED,   3);
+}
 
-        List<ServiceRequest> jobs = requestRepository
-                .findByAssignedTechnicianId(technician.getId());
+@Override
+public ApiResponse<?> getMyJobs(String technicianEmail, String cursor, int size) {
+User technician = userRepository.findByEmail(technicianEmail)
+        .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
-        if (jobs.isEmpty()) {
-            return new ApiResponse<>(true, "You have no accepted jobs yet", List.of());
-        }
+// fetch all jobs assigned to this technician
+List<ServiceRequest> all = requestRepository
+        .findByAssignedTechnicianId(technician.getId());
 
-        List<ServiceRequestResponseDTO> result = jobs.stream()
-                .map(this::toResponseDTO)
-                .toList();
+if (all.isEmpty()) {
+    Map<String, Object> empty = new HashMap<>();
+    empty.put("requests", List.of());
+    empty.put("nextCursor", null);
+    empty.put("hasMore", false);
+    return new ApiResponse<>(true, "You have no accepted jobs yet", empty);
+}
 
-        return new ApiResponse<>(true, "Your jobs fetched successfully", result);
-    }
+// sort by priority → newest first within same priority
+List<ServiceRequest> sorted = all.stream()
+        .sorted((a, b) -> {
+            int pa = JOB_PRIORITY.getOrDefault(a.getStatus(), 99);
+            int pb = JOB_PRIORITY.getOrDefault(b.getStatus(), 99);
+            if (pa != pb) return Integer.compare(pa, pb);
+            return b.getCreatedAt().compareTo(a.getCreatedAt());
+        })
+        .toList();
 
+// cursor = startIndex offset
+int startIndex = 0;
+if (cursor != null && !cursor.isBlank()) {
+    try {
+        startIndex = Integer.parseInt(cursor);
+    } catch (NumberFormatException ignored) {}
+}
+
+// slice page
+int endIndex      = Math.min(startIndex + size, sorted.size());
+List<ServiceRequest> pageItems = startIndex >= sorted.size()
+        ? List.of()
+        : sorted.subList(startIndex, endIndex);
+
+boolean hasMore   = endIndex < sorted.size();
+String nextCursor = hasMore ? String.valueOf(endIndex) : null;
+
+List<ServiceRequestResponseDTO> result = pageItems.stream()
+        .map(this::toResponseDTO)
+        .toList();
+
+Map<String, Object> response = new HashMap<>();
+response.put("requests", result);
+response.put("nextCursor", nextCursor);
+response.put("hasMore", hasMore);
+
+return new ApiResponse<>(true, "Your jobs fetched successfully", response);
+}
+
+    // ─────────────────────────────────────────────────────────────────────
+    // TECHNICIAN UPDATES JOB STATUS
+    // ─────────────────────────────────────────────────────────────────────
     @Override
     public ApiResponse<?> updateRequestStatus(String requestId, String technicianEmail,
-                                               UpdateStatusRequest dto) {
+            UpdateStatusRequest dto) {
         User technician = userRepository.findByEmail(technicianEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
@@ -303,7 +405,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         }
 
         RequestStatus currentStatus = request.getStatus();
-        RequestStatus expectedNext  = ALLOWED_NEXT.get(currentStatus);
+        RequestStatus expectedNext = ALLOWED_NEXT.get(currentStatus);
 
         if (expectedNext == null || !expectedNext.equals(newStatus)) {
             return new ApiResponse<>(false,
@@ -312,7 +414,6 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         request.setStatus(newStatus);
 
-        // save timestamp based on status
         if (newStatus == RequestStatus.IN_PROGRESS) {
             request.setInProgressAt(LocalDateTime.now());
         } else if (newStatus == RequestStatus.COMPLETED) {
@@ -324,9 +425,12 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         return new ApiResponse<>(true, "Job status updated to " + newStatus, null);
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // CUSTOMER RATES TECHNICIAN
+    // ─────────────────────────────────────────────────────────────────────
     @Override
     public ApiResponse<?> rateTechnician(String requestId, String customerEmail,
-                                          RatingRequest dto) {
+            RatingRequest dto) {
         User customer = userRepository.findByEmail(customerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
@@ -381,16 +485,15 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private ServiceRequestResponseDTO toResponseDTOWithTechnician(ServiceRequest req) {
         ServiceRequestResponseDTO dto = toResponseDTO(req);
         if (req.getAssignedTechnicianId() != null) {
-            userRepository.findById(req.getAssignedTechnicianId()).ifPresent(tech ->
-                    dto.setTechnician(new ServiceRequestResponseDTO.TechnicianInfo(
+            userRepository.findById(req.getAssignedTechnicianId())
+                    .ifPresent(tech -> dto.setTechnician(new ServiceRequestResponseDTO.TechnicianInfo(
                             tech.getName(),
                             tech.getPhone(),
                             tech.getCity(),
                             tech.getDistrict(),
                             tech.getTechnicianType() != null
-                                    ? tech.getTechnicianType().name() : null
-                    ))
-            );
+                                    ? tech.getTechnicianType().name()
+                                    : null)));
         }
         return dto;
     }

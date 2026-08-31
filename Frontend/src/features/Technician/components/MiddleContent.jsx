@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTechnicianDashboard, STEPS, getCategoryIcon, formatDate } from '../hooks/useTechnicianDashboard';
 import SubscriptionCard from './SubscriptionCard';
 import GradientButton from '../../../components/ui/GradientButton';
+import PageLoader from '../../../components/common/PageLoader';
+import ErrorPage from '../../../components/common/ErrorPage';
 
 const MiddleContent = () => {
   const {
@@ -19,6 +21,21 @@ const MiddleContent = () => {
     subLoading,
     fetchSubscription,
   } = useTechnicianDashboard();
+
+  // Full page loading
+  if (jobsLoading) {
+    return <PageLoader />;
+  }
+
+  // Full page error
+  if (error) {
+    return (
+      <ErrorPage
+        message={error}
+        onRetry={fetchJobs}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -38,13 +55,12 @@ const MiddleContent = () => {
           >
             <div className="flex justify-between items-start mb-3 sm:mb-4">
               <div
-                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-300 ${
-                  stat.color === 'blue'
+                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-300 ${stat.color === 'blue'
                     ? 'bg-blue-50 text-blue-600'
                     : stat.color === 'emerald'
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-amber-50 text-amber-600'
-                }`}
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : 'bg-amber-50 text-amber-600'
+                  }`}
               >
                 <span className="material-symbols-outlined text-[20px] sm:text-[24px]">
                   {stat.icon}
@@ -58,24 +74,11 @@ const MiddleContent = () => {
               {stat.label}
             </h3>
             <p className="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1 tracking-tight leading-none">
-              {i < 2 && jobsLoading ? '—' : stat.value}
+              {stat.value}
             </p>
           </div>
         ))}
       </section>
-
-      {/* ═══════════ ERROR BAR ═══════════ */}
-      {error && (
-        <div className="bg-red-50 border border-red-100 text-red-600 text-xs sm:text-sm rounded-xl p-3 sm:p-4 flex items-center justify-between gap-2">
-          <span className="truncate">{error}</span>
-          <button
-            onClick={fetchJobs}
-            className="shrink-0 font-bold underline text-red-700"
-          >
-            Retry
-          </button>
-        </div>
-      )}
 
       {/* ═══════════ ACTIVE JOB ═══════════ */}
       <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100/80 shadow-sm overflow-hidden">
@@ -174,8 +177,8 @@ const MiddleContent = () => {
               {advancing
                 ? 'Updating…'
                 : currentStepIdx === 1
-                ? 'Mark Complete'
-                : 'Advance Status'}
+                  ? 'Mark Complete'
+                  : 'Advance Status'}
             </GradientButton>
           </div>
 
@@ -207,8 +210,8 @@ const MiddleContent = () => {
                         ${isActive
                           ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] ring-3 ring-[#004ac6]/15 shadow-md shadow-[#004ac6]/30'
                           : isDone
-                          ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] shadow-sm'
-                          : 'bg-slate-200 text-slate-400 shadow-none'
+                            ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] shadow-sm'
+                            : 'bg-slate-200 text-slate-400 shadow-none'
                         }`}
                     >
                       <span className="material-symbols-outlined text-[13px]">
@@ -216,11 +219,10 @@ const MiddleContent = () => {
                       </span>
                     </div>
                     <span
-                      className={`text-[9px] mt-1.5 font-medium leading-tight ${
-                        isActive
+                      className={`text-[9px] mt-1.5 font-medium leading-tight ${isActive
                           ? 'text-[#004ac6] font-bold'
                           : 'text-slate-500'
-                      }`}
+                        }`}
                     >
                       {step.label}
                     </span>
@@ -251,16 +253,14 @@ const MiddleContent = () => {
                 return (
                   <div
                     key={step.status}
-                    className={`relative z-10 flex flex-col items-center text-center w-24 ${
-                      isPending ? 'opacity-40' : ''
-                    }`}
+                    className={`relative z-10 flex flex-col items-center text-center w-24 ${isPending ? 'opacity-40' : ''
+                      }`}
                   >
                     <div
                       className={`w-12 h-12 rounded-xl flex items-center justify-center text-white transition-all duration-300
-                        ${
-                          isActive
-                            ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 ring-4 ring-[#004ac6]/10 shadow-[0_8px_20px_-4px_rgba(0,74,198,0.4)]'
-                            : isDone
+                        ${isActive
+                          ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] scale-110 ring-4 ring-[#004ac6]/10 shadow-[0_8px_20px_-4px_rgba(0,74,198,0.4)]'
+                          : isDone
                             ? 'bg-gradient-to-br from-[#004ac6] to-[#57dffe] shadow-md'
                             : 'bg-slate-200 text-slate-400 shadow-none'
                         }`}
@@ -270,11 +270,10 @@ const MiddleContent = () => {
                       </span>
                     </div>
                     <span
-                      className={`text-xs mt-2 font-medium ${
-                        isActive
+                      className={`text-xs mt-2 font-medium ${isActive
                           ? 'text-[#004ac6] font-bold'
                           : 'text-slate-500'
-                      }`}
+                        }`}
                     >
                       {step.label}
                     </span>
@@ -300,13 +299,7 @@ const MiddleContent = () => {
           </a>
         </div>
 
-        {jobsLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <span className="material-symbols-outlined text-[24px] text-slate-300 animate-spin">
-              progress_activity
-            </span>
-          </div>
-        ) : completedJobs.length === 0 ? (
+        {completedJobs.length === 0 ? (
           <div className="text-center py-8 sm:py-10 bg-white rounded-xl sm:rounded-2xl border border-slate-100">
             <span className="material-symbols-outlined text-slate-300 text-[36px] sm:text-[40px]">
               inbox
