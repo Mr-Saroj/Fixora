@@ -3,13 +3,14 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import useSidebarResponsive from '../../hooks/useSidebarResponsive';
-import useNotificationPolling from '../../features/technician/hooks/useNotificationPolling'; // adjust path to your actual location
+// adjust path to your actual location
 import {
   LAYOUT_GLOBAL_CSS,
   getRootContainerClasses,
   getContentMarginClasses,
   getMainContentClasses,
 } from '../../utils/layoutUtils';
+import useNotificationPolling from '../../features/Technician/hooks/useNotificationPolling';
 
 // ✅ NO Sidebar or TopNavbar imports here
 
