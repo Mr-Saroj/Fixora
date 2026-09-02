@@ -11,21 +11,26 @@ import com.saroj.fixora.response.ApiResponse;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final org.slf4j.Logger log = 
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiResponse<Void>> handleDuplicateResource(DuplicateResourceException ex) {
         ApiResponse<Void> response = new ApiResponse<>(false, ex.getMessage(), null);
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response); // 409 Conflict
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex) {
         ApiResponse<Void> response = new ApiResponse<>(false, ex.getMessage(), null);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response); // 404 Not Found
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
+        // ✅ NOW you can see the real error in Render logs
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
         ApiResponse<Void> response = new ApiResponse<>(false, "An unexpected error occurred", null);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response); // 500 Error
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
