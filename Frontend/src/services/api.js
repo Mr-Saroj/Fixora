@@ -1,16 +1,18 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "/api", // Vite proxy will forward this to http://localhost:8080/api
+  baseURL: import.meta.env.VITE_API_TARGET + "/api",
 });
 
-// 🔑 Attach JWT token to every outgoing request (if present)
+// Attach JWT token
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => {
@@ -18,16 +20,17 @@ API.interceptors.request.use(
   }
 );
 
-// 🔁 Optional: auto-logout if token expires/invalid (401 response)
+// Handle 401
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      // Redirect to login if token is invalid/expired
+
       window.location.href = "/login";
     }
+
     return Promise.reject(error);
   }
 );
