@@ -14,6 +14,8 @@ import com.saroj.fixora.repository.ServiceRequestRepository;
 import com.saroj.fixora.repository.UserRepository;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.service.ServiceRequestService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +37,8 @@ import java.util.Map;
 @Service
 public class ServiceRequestServiceImpl implements ServiceRequestService {
 
+    private static final Logger log = LoggerFactory.getLogger(ServiceRequestServiceImpl.class);
+
     @Autowired
     private ServiceRequestRepository requestRepository;
 
@@ -42,7 +46,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private UserRepository userRepository;
 
     @Autowired
-    private RedisTemplate<String, String> redisTemplate; // for distributed lock only
+    private RedisTemplate<String, String> redisTemplate;
 
     @Autowired
     private KafkaTemplate<String, RequestEvent> kafkaTemplate;
@@ -57,8 +61,6 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     // ─────────────────────────────────────────────────────────────────────
     // CUSTOMER CREATES REQUEST
-    // → Save to MongoDB
-    // → Publish REQUEST_CREATED to Kafka (for notifications)
     // ─────────────────────────────────────────────────────────────────────
     @Override
     public ApiResponse<?> createRequest(ServiceRequestDTO dto, String customerEmail) {
@@ -81,21 +83,23 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         ServiceRequest saved = requestRepository.save(request);
 
-        kafkaTemplate.send(TOPIC, new RequestEvent(
-                "REQUEST_CREATED",
-                saved.getId(),
-                saved.getCategory().name(),
-                saved.getLocation(),
-                null));
+        // ✅ Kafka failure never kills the API
+        try {
+            kafkaTemplate.send(TOPIC, new RequestEvent(
+                    "REQUEST_CREATED",
+                    saved.getId(),
+                    saved.getCategory().name(),
+                    saved.getLocation(),
+                    null));
+        } catch (Exception e) {
+            log.warn("Kafka send failed (request still saved): {}", e.getMessage());
+        }
 
         return new ApiResponse<>(true, "Service request created successfully!", saved.getId());
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // TECHNICIAN SEES AVAILABLE REQUESTS
-    // → Cursor-based pagination (10 per page)
-    // → cursor = createdAt of last item seen by client
-    // → No Redis cache — direct MongoDB query
     // ─────────────────────────────────────────────────────────────────────
     @Override
     public ApiResponse<?> getRequestsForTechnician(String technicianEmail, String cursor, int size) {
@@ -109,22 +113,16 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         List<ServiceRequest> items;
 
         if (cursor != null && !cursor.isBlank()) {
-            // cursor page — fetch records older than cursor createdAt
             LocalDateTime cursorTime = LocalDateTime.parse(cursor);
-
-            // fetch a bit more than size to check hasMore
             Pageable pageable = PageRequest.of(0, size + 1);
             Page<ServiceRequest> page = requestRepository
                     .findByCategoryAndStatusOrderByCreatedAtDesc(
                             technician.getTechnicianType(), RequestStatus.PENDING, pageable);
-
-            // filter only records strictly before cursorTime
             items = page.getContent().stream()
                     .filter(r -> r.getCreatedAt().isBefore(cursorTime))
                     .limit(size + 1)
                     .toList();
         } else {
-            // first page — no cursor
             Pageable pageable = PageRequest.of(0, size + 1);
             Page<ServiceRequest> page = requestRepository
                     .findByCategoryAndStatusOrderByCreatedAtDesc(
@@ -132,13 +130,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             items = page.getContent();
         }
 
-        // check if more pages exist
         boolean hasMore = items.size() > size;
-
-        // trim to actual page size
         List<ServiceRequest> pageItems = hasMore ? items.subList(0, size) : items;
-
-        // nextCursor = createdAt of last item in this page
         String nextCursor = (hasMore && !pageItems.isEmpty())
                 ? pageItems.get(pageItems.size() - 1).getCreatedAt().toString()
                 : null;
@@ -153,32 +146,31 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     // ─────────────────────────────────────────────────────────────────────
     // TECHNICIAN ACCEPTS REQUEST
-    // → Redis distributed lock (prevent double accept)
-    // → Subscription check
-    // → MongoDB double check (status must be PENDING)
-    // → Location check
-    // → Save to MongoDB
-    // → Release lock
     // ─────────────────────────────────────────────────────────────────────
     @Override
     public ApiResponse<?> acceptRequest(String requestId, String technicianEmail) {
 
-        // STEP 1: Acquire Redis distributed lock
         String lockKey = "lock::request::" + requestId;
-        Boolean lockAcquired = redisTemplate.opsForValue()
-                .setIfAbsent(lockKey, technicianEmail, Duration.ofSeconds(10));
+        Boolean lockAcquired;
+
+        // ✅ Redis failure will NOT cause 500
+        try {
+            lockAcquired = redisTemplate.opsForValue()
+                    .setIfAbsent(lockKey, technicianEmail, Duration.ofSeconds(10));
+        } catch (Exception e) {
+            log.warn("Redis unavailable, skipping lock: {}", e.getMessage());
+            lockAcquired = true;
+        }
 
         if (Boolean.FALSE.equals(lockAcquired)) {
             return new ApiResponse<>(false,
-                    "This request has already been accepted by another technician.", null);
+                    "This request is being processed by another technician.", null);
         }
 
         try {
-            // STEP 2: Find technician
             User technician = userRepository.findByEmail(technicianEmail)
                     .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
-            // STEP 3: Subscription check
             LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
             if (technician.getSubscriptionEndDate() == null) {
@@ -191,11 +183,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                         .format(DateTimeFormatter.ofPattern("MMM dd, yyyy"));
                 return new ApiResponse<>(false,
                         "Your subscription expired on " + expiredOn +
-                                ". Please renew your plan to accept service requests.",
-                        null);
+                                ". Please renew your plan to accept service requests.", null);
             }
 
-            // STEP 4: Find request and double check status in MongoDB
             ServiceRequest request = requestRepository.findById(requestId)
                     .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
 
@@ -204,11 +194,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                         "This request has already been accepted by another technician.", null);
             }
 
-            // STEP 5: Location check
             String customerLocation = request.getLocation() != null
-                    ? request.getLocation().toLowerCase()
-                    : "";
-
+                    ? request.getLocation().toLowerCase() : "";
             String techCity = technician.getCity() != null ? technician.getCity().toLowerCase() : "";
             String techDistrict = technician.getDistrict() != null ? technician.getDistrict().toLowerCase() : "";
             String techState = technician.getState() != null ? technician.getState().toLowerCase() : "";
@@ -222,11 +209,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             if (!locationMatch) {
                 return new ApiResponse<>(false,
                         "Your service area (" + technician.getCity() + ", " + technician.getDistrict() +
-                                ") does not match the customer's location.",
-                        null);
+                                ") does not match the customer's location.", null);
             }
 
-            // STEP 6: Save to MongoDB
             request.setStatus(RequestStatus.ACCEPTED);
             request.setAssignedTechnicianId(technician.getId());
             request.setAcceptedAt(LocalDateTime.now());
@@ -235,8 +220,12 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             return new ApiResponse<>(true, "Job accepted successfully!", null);
 
         } finally {
-            // STEP 7: Always release lock
-            redisTemplate.delete(lockKey);
+            // ✅ Redis failure here also won't cause 500
+            try {
+                redisTemplate.delete(lockKey);
+            } catch (Exception e) {
+                log.warn("Redis lock release failed: {}", e.getMessage());
+            }
         }
     }
 
@@ -257,7 +246,6 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // fetch all customer requests from MongoDB
         List<ServiceRequest> all = requestRepository.findByCustomerId(user.getId());
 
         if (all.isEmpty()) {
@@ -268,27 +256,22 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             return new ApiResponse<>(true, "No service requests found", empty);
         }
 
-        // sort by priority → then newest first within same priority
         List<ServiceRequest> sorted = all.stream()
                 .sorted((a, b) -> {
                     int pa = STATUS_PRIORITY.getOrDefault(a.getStatus(), 99);
                     int pb = STATUS_PRIORITY.getOrDefault(b.getStatus(), 99);
-                    if (pa != pb)
-                        return Integer.compare(pa, pb);
+                    if (pa != pb) return Integer.compare(pa, pb);
                     return b.getCreatedAt().compareTo(a.getCreatedAt());
                 })
                 .toList();
 
-        // cursor = startIndex (offset into sorted list)
         int startIndex = 0;
         if (cursor != null && !cursor.isBlank()) {
             try {
                 startIndex = Integer.parseInt(cursor);
-            } catch (NumberFormatException ignored) {
-            }
+            } catch (NumberFormatException ignored) {}
         }
 
-        // slice page
         int endIndex = Math.min(startIndex + size, sorted.size());
         List<ServiceRequest> pageItems = startIndex >= sorted.size()
                 ? List.of()
@@ -312,69 +295,63 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     // ─────────────────────────────────────────────────────────────────────
     // TECHNICIAN SEES THEIR OWN ACCEPTED JOBS
     // ─────────────────────────────────────────────────────────────────────
-    private static final Map<RequestStatus, Integer> JOB_PRIORITY
-    = new EnumMap<>(RequestStatus.class);
-static {
-JOB_PRIORITY.put(RequestStatus.IN_PROGRESS, 1);
-JOB_PRIORITY.put(RequestStatus.ACCEPTED,    2);
-JOB_PRIORITY.put(RequestStatus.COMPLETED,   3);
-}
+    private static final Map<RequestStatus, Integer> JOB_PRIORITY = new EnumMap<>(RequestStatus.class);
+    static {
+        JOB_PRIORITY.put(RequestStatus.IN_PROGRESS, 1);
+        JOB_PRIORITY.put(RequestStatus.ACCEPTED, 2);
+        JOB_PRIORITY.put(RequestStatus.COMPLETED, 3);
+    }
 
-@Override
-public ApiResponse<?> getMyJobs(String technicianEmail, String cursor, int size) {
-User technician = userRepository.findByEmail(technicianEmail)
-        .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
+    @Override
+    public ApiResponse<?> getMyJobs(String technicianEmail, String cursor, int size) {
+        User technician = userRepository.findByEmail(technicianEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
-// fetch all jobs assigned to this technician
-List<ServiceRequest> all = requestRepository
-        .findByAssignedTechnicianId(technician.getId());
+        List<ServiceRequest> all = requestRepository.findByAssignedTechnicianId(technician.getId());
 
-if (all.isEmpty()) {
-    Map<String, Object> empty = new HashMap<>();
-    empty.put("requests", List.of());
-    empty.put("nextCursor", null);
-    empty.put("hasMore", false);
-    return new ApiResponse<>(true, "You have no accepted jobs yet", empty);
-}
+        if (all.isEmpty()) {
+            Map<String, Object> empty = new HashMap<>();
+            empty.put("requests", List.of());
+            empty.put("nextCursor", null);
+            empty.put("hasMore", false);
+            return new ApiResponse<>(true, "You have no accepted jobs yet", empty);
+        }
 
-// sort by priority → newest first within same priority
-List<ServiceRequest> sorted = all.stream()
-        .sorted((a, b) -> {
-            int pa = JOB_PRIORITY.getOrDefault(a.getStatus(), 99);
-            int pb = JOB_PRIORITY.getOrDefault(b.getStatus(), 99);
-            if (pa != pb) return Integer.compare(pa, pb);
-            return b.getCreatedAt().compareTo(a.getCreatedAt());
-        })
-        .toList();
+        List<ServiceRequest> sorted = all.stream()
+                .sorted((a, b) -> {
+                    int pa = JOB_PRIORITY.getOrDefault(a.getStatus(), 99);
+                    int pb = JOB_PRIORITY.getOrDefault(b.getStatus(), 99);
+                    if (pa != pb) return Integer.compare(pa, pb);
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .toList();
 
-// cursor = startIndex offset
-int startIndex = 0;
-if (cursor != null && !cursor.isBlank()) {
-    try {
-        startIndex = Integer.parseInt(cursor);
-    } catch (NumberFormatException ignored) {}
-}
+        int startIndex = 0;
+        if (cursor != null && !cursor.isBlank()) {
+            try {
+                startIndex = Integer.parseInt(cursor);
+            } catch (NumberFormatException ignored) {}
+        }
 
-// slice page
-int endIndex      = Math.min(startIndex + size, sorted.size());
-List<ServiceRequest> pageItems = startIndex >= sorted.size()
-        ? List.of()
-        : sorted.subList(startIndex, endIndex);
+        int endIndex = Math.min(startIndex + size, sorted.size());
+        List<ServiceRequest> pageItems = startIndex >= sorted.size()
+                ? List.of()
+                : sorted.subList(startIndex, endIndex);
 
-boolean hasMore   = endIndex < sorted.size();
-String nextCursor = hasMore ? String.valueOf(endIndex) : null;
+        boolean hasMore = endIndex < sorted.size();
+        String nextCursor = hasMore ? String.valueOf(endIndex) : null;
 
-List<ServiceRequestResponseDTO> result = pageItems.stream()
-        .map(this::toResponseDTO)
-        .toList();
+        List<ServiceRequestResponseDTO> result = pageItems.stream()
+                .map(this::toResponseDTO)
+                .toList();
 
-Map<String, Object> response = new HashMap<>();
-response.put("requests", result);
-response.put("nextCursor", nextCursor);
-response.put("hasMore", hasMore);
+        Map<String, Object> response = new HashMap<>();
+        response.put("requests", result);
+        response.put("nextCursor", nextCursor);
+        response.put("hasMore", hasMore);
 
-return new ApiResponse<>(true, "Your jobs fetched successfully", response);
-}
+        return new ApiResponse<>(true, "Your jobs fetched successfully", response);
+    }
 
     // ─────────────────────────────────────────────────────────────────────
     // TECHNICIAN UPDATES JOB STATUS
@@ -460,7 +437,7 @@ return new ApiResponse<>(true, "Your jobs fetched successfully", response);
         return new ApiResponse<>(true, "Thanks for your feedback!", null);
     }
 
-    // ── mapping helpers ──────────────────────────────────────────────────
+    // ── mapping helpers ───────────────────────────────────────────────────
 
     private ServiceRequestResponseDTO toResponseDTO(ServiceRequest req) {
         ServiceRequestResponseDTO dto = new ServiceRequestResponseDTO();
