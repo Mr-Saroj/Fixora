@@ -105,20 +105,23 @@ export const useCustomerRequests = () => {
   const standardCount  = requests.filter((r) => r.urgency?.toLowerCase() === 'standard').length;
 
   // ── Accept ─────────────────────────────────────────────────
-  const handleAccept = async (id) => {
+const handleAccept = async (id) => {
+    setAcceptingId(id); // ← disable button immediately
     try {
-      const response = await acceptRequest(id);
-      if (response.data.success) {
-        setRequests((prev) => prev.filter((req) => req.id !== id));
-        setSelectedRequest(null);
-      } else {
-        alert(response.data.message);
-      }
+        const response = await acceptRequest(id);
+        if (response.data.success) {
+            setRequests((prev) => prev.filter((req) => req.id !== id));
+            setSelectedRequest(null);
+        } else {
+            alert(response.data.message);
+        }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to accept request.';
-      alert(msg);
+        const msg = err.response?.data?.message || 'Failed to accept request.';
+        alert(msg);
+    } finally {
+        setAcceptingId(null); // ← re-enable button
     }
-  };
+};
 
   // ── Decline ────────────────────────────────────────────────
   const handleDecline = (id) => {

@@ -203,7 +203,7 @@ const CustomerRequest = () => {
 
   // ── Loading ────────────────────────────────────────────────
   if (loading) {
-    return (<PageLoader/>);
+    return (<PageLoader />);
   }
 
   // ── Error ──────────────────────────────────────────────────
@@ -554,11 +554,21 @@ const CustomerRequest = () => {
                 </button>
                 <GradientButton
                   onClick={() => handleAccept(req.id)}
+                  disabled={acceptingId === req.id}
                   size="small"
-                  className="flex-[1.5] !py-2.5 !text-xs !rounded-lg !font-bold !shadow-sm active:!shadow-md hover:!translate-y-0"
+                  className="flex-[1.5] !py-2.5 !text-xs !rounded-lg !font-bold !shadow-sm hover:!translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <span className="material-symbols-outlined text-[15px]">check_circle</span>
-                  Accept
+                  {acceptingId === req.id ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Accepting...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                      Accept
+                    </>
+                  )}
                 </GradientButton>
               </>
             );
@@ -580,10 +590,18 @@ const CustomerRequest = () => {
                 </button>
                 <GradientButton
                   onClick={() => handleAccept(req.id)}
+                  disabled={acceptingId === req.id}
                   size="small"
-                  className="flex-1 lg:flex-none !px-5 !py-2.5 !text-xs !rounded-xl !font-bold !shadow-sm hover:!shadow-md hover:!-translate-y-0.5"
+                  className="flex-1 lg:flex-none !px-5 !py-2.5 !text-xs !rounded-xl !font-bold !shadow-sm hover:!shadow-md hover:!-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Accept
+                  {acceptingId === req.id ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Accepting...
+                    </>
+                  ) : (
+                    'Accept'
+                  )}
                 </GradientButton>
               </>
             );
