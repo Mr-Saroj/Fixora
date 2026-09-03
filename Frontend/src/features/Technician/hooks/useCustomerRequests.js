@@ -12,6 +12,7 @@ export const useCustomerRequests = () => {
   const [error, setError] = useState(null);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
+  const [acceptingId, setAcceptingId] = useState(null); // ← ADDED
 
   // ref attached to a sentinel div at bottom of list
   const sentinelRef = useRef(null);
@@ -53,7 +54,7 @@ export const useCustomerRequests = () => {
     }
   }, [cursor, hasMore, loadingMore]);
 
-  // ── IntersectionObserver — fires when sentinel scrolls into view ──
+  // ── IntersectionObserver ───────────────────────────────────
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -64,12 +65,12 @@ export const useCustomerRequests = () => {
           loadMore();
         }
       },
-      { threshold: 0.1 }   // trigger when 10% of sentinel is visible
+      { threshold: 0.1 }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMore]);   // re-attach whenever loadMore reference changes (cursor updated)
+  }, [loadMore]);
 
   // ── Filter + Sort ──────────────────────────────────────────
   const filteredRequests = useMemo(() => {
@@ -105,23 +106,23 @@ export const useCustomerRequests = () => {
   const standardCount  = requests.filter((r) => r.urgency?.toLowerCase() === 'standard').length;
 
   // ── Accept ─────────────────────────────────────────────────
-const handleAccept = async (id) => {
-    setAcceptingId(id); // ← disable button immediately
+  const handleAccept = async (id) => {
+    setAcceptingId(id);
     try {
-        const response = await acceptRequest(id);
-        if (response.data.success) {
-            setRequests((prev) => prev.filter((req) => req.id !== id));
-            setSelectedRequest(null);
-        } else {
-            alert(response.data.message);
-        }
+      const response = await acceptRequest(id);
+      if (response.data.success) {
+        setRequests((prev) => prev.filter((req) => req.id !== id));
+        setSelectedRequest(null);
+      } else {
+        alert(response.data.message);
+      }
     } catch (err) {
-        const msg = err.response?.data?.message || 'Failed to accept request.';
-        alert(msg);
+      const msg = err.response?.data?.message || 'Failed to accept request.';
+      alert(msg);
     } finally {
-        setAcceptingId(null); // ← re-enable button
+      setAcceptingId(null);
     }
-};
+  };
 
   // ── Decline ────────────────────────────────────────────────
   const handleDecline = (id) => {
@@ -134,6 +135,7 @@ const handleAccept = async (id) => {
     loading, loadingMore, error,
     filteredRequests, totalCount, emergencyCount, standardCount,
     hasMore, sentinelRef,
+    acceptingId,        // ← ADDED
     setActiveFilter, setSearchQuery, setSortBy, setSelectedRequest,
     handleAccept, handleDecline,
   };

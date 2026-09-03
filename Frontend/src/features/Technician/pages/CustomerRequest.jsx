@@ -33,7 +33,8 @@ const CustomerRequest = () => {
     handleDecline,
     loadingMore,
     sentinelRef,
-  } = useCustomerRequests();
+    acceptingId, // ← ADD THIS
+} = useCustomerRequests();
 
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
