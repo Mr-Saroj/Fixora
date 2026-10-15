@@ -9,6 +9,7 @@ import {
 import GradientButton from '../../../components/ui/GradientButton';
 import PageLoader from '../../../components/common/PageLoader';
 import ErrorPage from '../../../components/common/ErrorPage';
+import DashboardSkeleton from '../Skelitons/DashboardSkeleton';
 
 const MiddleContent = () => {
   const {
@@ -28,7 +29,7 @@ const MiddleContent = () => {
   } = useDashboardData();
 
   if (loading) {
-    return <PageLoader />;
+    return <DashboardSkeleton />;
   }
 
   if (error) {

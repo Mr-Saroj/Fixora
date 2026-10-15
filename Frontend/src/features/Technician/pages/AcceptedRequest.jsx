@@ -4,6 +4,7 @@ import RequestCard from '../../../components/ui/RequestCard';
 import GradientButton from '../../../components/ui/GradientButton';
 import ErrorPage from '../../../components/common/ErrorPage';
 import PageLoader from '../../../components/common/PageLoader';
+import AcceptedRequestSkeleton from '../Skelitons/AcceptedRequestSkeleton';
 
 // ── Mini Stepper Sub-component ─────────────────────────
 const MiniStepper = ({ currentStep, status, steps }) => {
@@ -249,7 +250,7 @@ const AcceptedRequest = () => {
   } = hook;
 
   // ── Loading ────────────────────────────────────────────────
-  if (loading) return <PageLoader />;
+  if (loading) return <AcceptedRequestSkeleton/>;
   // ── Error ──────────────────────────────────────────────────
   if (error) return <ErrorPage message={error} onRetry={fetchJobs} />;
 

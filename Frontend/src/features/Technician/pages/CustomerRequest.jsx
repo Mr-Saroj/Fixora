@@ -11,6 +11,7 @@ import {
 import RequestCard from '../../../components/ui/RequestCard';
 import GradientButton from '../../../components/ui/GradientButton';
 import PageLoader from '../../../components/common/PageLoader';
+import CustomerRequestSkeleton from '../Skelitons/CustomerRequestSkeleton';
 
 
 const CustomerRequest = () => {
@@ -204,7 +205,7 @@ const CustomerRequest = () => {
 
   // ── Loading ────────────────────────────────────────────────
   if (loading) {
-    return (<PageLoader />);
+    return (<CustomerRequestSkeleton/>);
   }
 
   // ── Error ──────────────────────────────────────────────────

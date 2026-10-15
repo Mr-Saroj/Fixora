@@ -3,6 +3,7 @@ import { useRequestHistory } from '../hooks/useRequestHistory';
 import { submitRating } from '../services/requestService';
 import PageLoader from '../../../components/common/PageLoader';
 import ErrorPage from '../../../components/common/ErrorPage';
+import RequestHistorySkeleton from '../Skelitons/RequestHistorySkeleton';
 
 // ── Star rating input ─────────────────────────────────────
 const StarInput = ({ value, onChange }) => {
@@ -268,7 +269,7 @@ const RequestHistory = () => {
     } = useRequestHistory();
 
     if (loading) {
-        return (<PageLoader/> );
+        return (<RequestHistorySkeleton/> );
     }
 
    if (error) {

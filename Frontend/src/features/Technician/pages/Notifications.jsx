@@ -9,6 +9,7 @@ import {
   getTypeStyle,
 } from '../utils/notificationUtils';
 import PageLoader from '../../../components/common/PageLoader';
+import NotificationsSkeleton from '../Skelitons/NotificationsSkeleton';
 
 // ── Main Component ────────────────────────────────────────────────────
 const Notifications = () => {
@@ -162,7 +163,7 @@ const Notifications = () => {
 
   // ── Loading State ─────────────────────────────────────────────────
   if (loading) {
-    return (<PageLoader />);
+    return (<NotificationsSkeleton/>);
   }
 
   // ── Error State ───────────────────────────────────────────────────

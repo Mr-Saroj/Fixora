@@ -5,6 +5,7 @@ import SubscriptionCard from './SubscriptionCard';
 import GradientButton from '../../../components/ui/GradientButton';
 import PageLoader from '../../../components/common/PageLoader';
 import ErrorPage from '../../../components/common/ErrorPage';
+import MiddleContentSkeleton from '../Skelitons/MiddleContentSkeleton';
 
 const MiddleContent = () => {
   const {
@@ -24,7 +25,7 @@ const MiddleContent = () => {
 
   // Full page loading
   if (jobsLoading) {
-    return <PageLoader />;
+    return <MiddleContentSkeleton/>;
   }
 
   // Full page error
