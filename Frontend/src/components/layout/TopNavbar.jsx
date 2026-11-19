@@ -1,5 +1,5 @@
+
 import React from 'react';
-import { useAppSelector } from '../../redux/hooks'; // adjust path to match your project structure
 
 import {
   getHeaderClasses,
@@ -9,7 +9,9 @@ import {
   getActionButtonClasses,
   getAvatarClasses,
 } from '../../utils/topNavbarUtils';
+
 import useTopNavbar from '../../hooks/useTopNavbar';
+import { useAppSelector } from '../../redux/hooks';
 
 const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
   const {
@@ -19,7 +21,10 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
     toggleSidebar,
   } = useTopNavbar(sidebarOpen, setSidebarOpen);
 
-  const unreadCount = useAppSelector((state) => state.Notification.unreadCount);
+  // Notification count still comes from Redux
+  const unreadCount = useAppSelector(
+    (state) => state.Notification.unreadCount
+  );
 
   return (
     <header className={getHeaderClasses()}>
@@ -40,6 +45,7 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
           <h1 className="text-lg lg:text-xl font-bold text-slate-800">
             {greeting}
           </h1>
+
           {subtitle && (
             <p className="hidden lg:block text-sm text-slate-400">
               {subtitle}
@@ -56,6 +62,7 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
           <span className="material-symbols-outlined text-slate-400 text-[20px] mr-2">
             search
           </span>
+
           <input
             type="text"
             placeholder="Search..."
@@ -63,9 +70,12 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
           />
         </div>
 
-        {/* Notification Bell — driven by Redux, not local/static state */}
+        {/* Notifications */}
         <button className={`relative ${getActionButtonClasses()}`}>
-          <span className="material-symbols-outlined text-[22px]">notifications</span>
+          <span className="material-symbols-outlined text-[22px]">
+            notifications
+          </span>
+
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-white">
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -73,13 +83,13 @@ const TopNavbar = ({ sidebarOpen, setSidebarOpen, subtitle, actionButton }) => {
           )}
         </button>
 
-        {/* Role-specific action button injected from outside */}
         {actionButton}
 
         {/* Avatar */}
         <div title={avatarTitle} className={getAvatarClasses()}>
           {initials}
         </div>
+
       </div>
     </header>
   );

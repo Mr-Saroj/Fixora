@@ -4,14 +4,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import com.saroj.fixora.dto.AuthMeResponse;
 import com.saroj.fixora.dto.ForgotPasswordRequest;
 import com.saroj.fixora.dto.LoginRequest;
 import com.saroj.fixora.dto.RegisterRequest;
 import com.saroj.fixora.dto.ResetPasswordRequest;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.service.AuthService;
+import com.saroj.fixora.model.User;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,24 +31,38 @@ public class AuthController {
 
     // ADD THIS ENTIRE METHOD:
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<?>> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<?>> login(
+            @RequestBody LoginRequest request) {
+
         ApiResponse<?> response = authService.loginUser(request);
-        return ResponseEntity.ok(response); // 200 OK
+        return ResponseEntity.ok(response);
     }
+
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<?>> getCurrentUser(Authentication authentication) {
-        String email = authentication.getName(); // set by JwtAuthFilter
-        return ResponseEntity.ok(authService.getCurrentUser(email));
+    public ResponseEntity<ApiResponse<?>> getCurrentUser(
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String email = authentication.getName();
+
+        ApiResponse<?> response = authService.getCurrentUser(email);
+
+        return ResponseEntity.ok(response);
     }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<?>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         ApiResponse<?> response = authService.sendForgotPasswordOtp(request);
         return ResponseEntity.ok(response);
     }
-     
+
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse<?>> resetPassword(@RequestBody ResetPasswordRequest request) {
         ApiResponse<?> response = authService.resetPassword(request);
         return ResponseEntity.ok(response);
     }
+
 }

@@ -1,84 +1,118 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser, loginUser, getCurrentUser, sendForgotPasswordOtp, resetPassword } from '../services/authService';
 
-import { useAppDispatch } from "../../../redux/hooks";
-import { loginSuccess, logout } from "../../../redux/slices/authSlice";
+import {
+  registerUser,
+  loginUser,
+  sendForgotPasswordOtp,
+  resetPassword
+} from '../services/authService';
+
+import {
+  setToken,
+  getToken,
+  removeToken
+} from '../../../utils/authCookie';
+
 import { uploadPhotoToCloudinary } from '../../customer/services/cloudinaryService';
 
 export const useAuth = () => {
+
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
 
+  // ================= LOGIN =================
+
   const login = async (credentials) => {
+
     setIsLoading(true);
+
     try {
+
       const response = await loginUser(credentials);
       const data = response.data;
 
-      // 🔍 DEBUG — remove after fixing
-      console.log("🔍 RAW response.data:", data);
-      console.log("🔍 data.data:", data.data);
-
       if (data.success) {
-        const { token, user } = data.data;
 
-        // 🔍 DEBUG — remove after fixing
-        console.log("🔍 token:", token);
-        console.log("🔍 user:", user);
-        console.log("🔍 user.role:", user?.role, "| typeof:", typeof user?.role);
+        // Backend returns token, name and role
+        const { token, name, role } = data.data;
 
-        dispatch(loginSuccess(user));
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        // 1. Store JWT in cookies
+        setToken(token);
 
-        if (user.role === "CUSTOMER") {
+        // 2. Store name and role in localStorage
+        localStorage.setItem("name", name);
+        localStorage.setItem("role", role);
+
+        // 3. Navigate according to role
+        if (role === "CUSTOMER") {
           navigate("/customer-dashboard");
-        } else if (user.role === "TECHNICIAN") {
+        }
+        else if (role === "TECHNICIAN") {
           navigate("/technician-dashboard");
-        } else if (user.role === "ADMIN") {
+        }
+        else if (role === "ADMIN") {
           navigate("/admin-dashboard");
-        } else {
+        }
+        else {
           alert("Unknown user role!");
         }
+
       } else {
         alert(data.message || "Login failed.");
       }
+
     } catch (error) {
-      console.log("🔍 login error:", error);
-      const errorMessage = error.response?.data?.message || "Login failed. Please try again.";
+
+      console.log("Login error:", error);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        "Login failed. Please try again.";
+
       alert(errorMessage);
+
     } finally {
       setIsLoading(false);
     }
   };
 
+
+  // ================= REGISTER =================
+
   const register = async (userData) => {
+
     setIsLoading(true);
+
     try {
-      // ── 1. Upload profile photo to Cloudinary (if provided) ──
+
       let profilePhotoUrl = null;
       let govtIdPhotoUrl = null;
 
       if (userData.profilePhotoFile) {
-        profilePhotoUrl = await uploadPhotoToCloudinary(userData.profilePhotoFile);
+        profilePhotoUrl = await uploadPhotoToCloudinary(
+          userData.profilePhotoFile
+        );
       }
 
-      // ── 2. Upload govt ID photo to Cloudinary (if provided) ──
       if (userData.govtIdPhotoFile) {
-        govtIdPhotoUrl = await uploadPhotoToCloudinary(userData.govtIdPhotoFile);
+        govtIdPhotoUrl = await uploadPhotoToCloudinary(
+          userData.govtIdPhotoFile
+        );
       }
 
-      // ── 3. Build clean payload — no File objects, just URLs ──
-      const { profilePhotoFile, govtIdPhotoFile, ...rest } = userData;
+      const {
+        profilePhotoFile,
+        govtIdPhotoFile,
+        ...rest
+      } = userData;
+
       const payload = {
         ...rest,
-        profilePhotoUrl,   // null for customers, URL string for technicians
-        govtIdPhotoUrl,
+        profilePhotoUrl,
+        govtIdPhotoUrl
       };
 
-      // ── 4. Send to Spring Boot ──
       const response = await registerUser(payload);
       const data = response.data;
 
@@ -88,71 +122,120 @@ export const useAuth = () => {
       } else {
         alert(data.message || "Registration failed.");
       }
+
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Network error. Is Spring Boot running?";
+
+      const errorMessage =
+        error.response?.data?.message ||
+        "Network error. Is Spring Boot running?";
+
       alert(errorMessage);
+
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadUserFromToken = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
 
-    // ✅ Admin has no DB record — restore from localStorage directly
-    const savedUser = JSON.parse(localStorage.getItem("user") || "null");
-    if (savedUser?.role === "ADMIN") {
-      dispatch(loginSuccess(savedUser));
-      return;
+  // ================= RESTORE LOGIN =================
+
+  const loadUserFromToken = () => {
+
+    const token = getToken();
+    const name = localStorage.getItem("name");
+    const role = localStorage.getItem("role");
+
+    if (token && name && role) {
+      return true;
     }
 
-    try {
-      const response = await getCurrentUser();
-      const data = response.data;
+    return false;
+  };
 
-      if (data.success) {
-        dispatch(loginSuccess(data.data));
-        localStorage.setItem("user", JSON.stringify(data.data));
-      }
-    } catch (error) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      dispatch(logout());
-    }
-};
+
+  // ================= LOGOUT =================
+
+  const logout = () => {
+
+    removeToken();
+
+    localStorage.removeItem("name");
+    localStorage.removeItem("role");
+
+    navigate("/login");
+  };
+
+
+  // ================= FORGOT PASSWORD =================
+
   const forgotPassword = async (email, onSuccess) => {
+
     setIsLoading(true);
+
     try {
+
       const res = await sendForgotPasswordOtp(email);
+
       if (res.data.success) {
         onSuccess(email);
       } else {
-        alert(res.data.message || 'Failed to send OTP.');
+        alert(res.data.message || "Failed to send OTP.");
       }
+
     } catch (err) {
-      alert(err.response?.data?.message || 'No account found with this email.');
+
+      alert(
+        err.response?.data?.message ||
+        "No account found with this email."
+      );
+
     } finally {
       setIsLoading(false);
     }
   };
+
+
+  // ================= RESET PASSWORD =================
 
   const resetUserPassword = async (email, otp, newPassword) => {
+
     setIsLoading(true);
+
     try {
-      const res = await resetPassword(email, otp, newPassword);
+
+      const res = await resetPassword(
+        email,
+        otp,
+        newPassword
+      );
+
       if (res.data.success) {
-        alert('Password reset successfully! Please log in.');
-        navigate('/login');
+        alert("Password reset successfully! Please log in.");
+        navigate("/login");
       } else {
-        alert(res.data.message || 'Failed to reset password.');
+        alert(res.data.message || "Failed to reset password.");
       }
+
     } catch (err) {
-      alert(err.response?.data?.message || 'Reset failed. OTP may have expired.');
+
+      alert(
+        err.response?.data?.message ||
+        "Reset failed. OTP may have expired."
+      );
+
     } finally {
       setIsLoading(false);
     }
   };
 
-  return { login, register, loadUserFromToken, isLoading, forgotPassword, resetUserPassword };
+
+  return {
+    login,
+    register,
+    loadUserFromToken,
+    logout,
+    isLoading,
+    forgotPassword,
+    resetUserPassword
+  };
 };

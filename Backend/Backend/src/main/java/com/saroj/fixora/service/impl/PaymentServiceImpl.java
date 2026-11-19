@@ -50,7 +50,8 @@ public class PaymentServiceImpl implements PaymentService {
             JSONObject orderRequest = new JSONObject();
             orderRequest.put("amount", request.getAmount() * 100); // ₹ to paise
             orderRequest.put("currency", "INR");
-            orderRequest.put("receipt", "rcpt_" + user.getId().substring(0, 8) + "_" + (System.currentTimeMillis() % 100000));
+            orderRequest.put("receipt",
+                    "rcpt_" + user.getId().substring(0, 8) + "_" + (System.currentTimeMillis() % 100000));
             orderRequest.put("payment_capture", 1);
 
             Order razorpayOrder = client.orders.create(orderRequest);
@@ -79,8 +80,7 @@ public class PaymentServiceImpl implements PaymentService {
         boolean isValid = verifySignature(
                 request.getRazorpayOrderId(),
                 request.getRazorpayPaymentId(),
-                request.getRazorpaySignature()
-        );
+                request.getRazorpaySignature());
 
         if (!isValid) {
             return new ApiResponse<>(false, "Payment verification failed!", null);

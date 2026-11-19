@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback } from 'react';
 
 import {
@@ -5,22 +6,31 @@ import {
   getFirstName,
   getGreetingText,
 } from '../utils/topNavbarUtils';
-import { useAppSelector } from '../redux/hooks';
 
-/**
- * Reusable hook for TopNavbar state and logic
- * @param {boolean} sidebarOpen - Current sidebar state
- * @param {function} setSidebarOpen - Setter from parent
- * @returns {object} Computed values and handlers
- */
 const useTopNavbar = (sidebarOpen, setSidebarOpen) => {
 
-  const user = useAppSelector((state) => state.auth.user);
+  // Get user name from localStorage instead of Redux
+  const userName = localStorage.getItem('name') || 'Guest';
 
-  const firstName  = useMemo(() => getFirstName(user?.name),  [user?.name]);
-  const initials   = useMemo(() => getInitials(user?.name),   [user?.name]);
-  const avatarTitle = useMemo(() => user?.name || 'Guest',    [user?.name]);
-  const greeting   = useMemo(() => getGreetingText(firstName),[firstName]);
+  const firstName = useMemo(
+    () => getFirstName(userName),
+    [userName]
+  );
+
+  const initials = useMemo(
+    () => getInitials(userName),
+    [userName]
+  );
+
+  const avatarTitle = useMemo(
+    () => userName,
+    [userName]
+  );
+
+  const greeting = useMemo(
+    () => getGreetingText(firstName),
+    [firstName]
+  );
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);

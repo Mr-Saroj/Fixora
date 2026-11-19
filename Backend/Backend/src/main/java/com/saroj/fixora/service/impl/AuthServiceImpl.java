@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.saroj.fixora.dto.AuthMeResponse;
 import com.saroj.fixora.dto.AuthResponse;
 import com.saroj.fixora.dto.ForgotPasswordRequest;
 import com.saroj.fixora.dto.LoginRequest;
+import com.saroj.fixora.dto.LoginResponse;
 import com.saroj.fixora.dto.RegisterRequest;
 import com.saroj.fixora.dto.ResetPasswordRequest;
 import com.saroj.fixora.dto.UserResponse;
@@ -28,200 +30,180 @@ import com.saroj.fixora.service.EmailService;
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    
-    @Autowired
-    private OtpStore otpStore;
-     
-    @Autowired
-    private EmailService emailService;
+        @Autowired
+        private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+        @Autowired
+        private OtpStore otpStore;
 
-    @Override
-    public ApiResponse<?> registerUser(RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new DuplicateResourceException("Email is already registered!");
+        @Autowired
+        private EmailService emailService;
+
+        @Autowired
+        private JwtUtil jwtUtil;
+
+        @Override
+        public ApiResponse<?> registerUser(RegisterRequest request) {
+                if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                        throw new DuplicateResourceException("Email is already registered!");
+                }
+
+                User user = new User();
+                user.setName(request.getName());
+                user.setEmail(request.getEmail());
+                user.setPhone(request.getPhone());
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+                user.setRole(Role.valueOf(request.getRole().toUpperCase()));
+
+                if (user.getRole() == Role.TECHNICIAN && request.getTechnicianType() != null) {
+                        user.setTechnicianType(TechnicianType.valueOf(request.getTechnicianType().toUpperCase()));
+                        user.setState(request.getState());
+                        user.setDistrict(request.getDistrict());
+                        user.setCity(request.getCity());
+                        user.setPinCode(request.getPinCode());
+                        user.setProfilePhotoUrl(request.getProfilePhotoUrl());
+                        user.setGovtIdPhotoUrl(request.getGovtIdPhotoUrl());
+                        user.setLoginAccess(LoginAccess.PENDING);
+                }
+
+                User savedUser = userRepository.save(user);
+                return new ApiResponse<>(true, "Registration successful!", savedUser.getId());
         }
 
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(Role.valueOf(request.getRole().toUpperCase()));
+        @Override
+        public ApiResponse<?> loginUser(LoginRequest request) {
 
-        if (user.getRole() == Role.TECHNICIAN && request.getTechnicianType() != null) {
-            user.setTechnicianType(TechnicianType.valueOf(request.getTechnicianType().toUpperCase()));
-            user.setState(request.getState());
-            user.setDistrict(request.getDistrict());
-            user.setCity(request.getCity());
-            user.setPinCode(request.getPinCode());
-            user.setProfilePhotoUrl(request.getProfilePhotoUrl());
-            user.setGovtIdPhotoUrl(request.getGovtIdPhotoUrl());
-            user.setLoginAccess(LoginAccess.PENDING);
-        }
+                // ADMIN LOGIN
+                if ("admin@gmail.com".equals(request.getEmail()) &&
+                                "admin@123".equals(request.getPassword())) {
 
-        User savedUser = userRepository.save(user);
-        return new ApiResponse<>(true, "Registration successful!", savedUser.getId());
-    }
+                        String token = jwtUtil.generateToken(
+                                        request.getEmail(),
+                                        Role.ADMIN.name());
 
-    @Override
-    public ApiResponse<?> loginUser(LoginRequest request) {
+                        LoginResponse loginResponse = new LoginResponse(
+                                        token,
+                                        "Admin",
+                                        Role.ADMIN.name());
 
-        // ============================================
-        // ADMIN LOGIN
-        // ============================================
+                        return new ApiResponse<>(
+                                        true,
+                                        "Admin login successful!",
+                                        loginResponse);
+                }
 
-        if ("admin@gmail.com".equals(request.getEmail()) &&
-            "admin@123".equals(request.getPassword())) {
+                // NORMAL USER LOGIN
+                User user = userRepository.findByEmail(request.getEmail())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "User not found with email: " + request.getEmail()));
 
-            String token = jwtUtil.generateToken(
-                    request.getEmail(),
-                    Role.ADMIN.name()
-            );
+                // PASSWORD CHECK
+                if (!passwordEncoder.matches(
+                                request.getPassword(),
+                                user.getPassword())) {
 
-            UserResponse userResponse = new UserResponse(
-                    "admin-001",
-                    "Admin",
-                    "admin@gmail.com",
-                    Role.ADMIN
-            );
+                        throw new ResourceNotFoundException("Invalid password!");
+                }
 
-            AuthResponse authResponse =
-                    new AuthResponse(token, userResponse);
+                // TECHNICIAN LOGIN ACCESS CHECK
+                if (user.getRole() == Role.TECHNICIAN) {
 
-            return new ApiResponse<>(
-                    true,
-                    "Admin login successful!",
-                    authResponse
-            );
-        }
+                        LoginAccess access = user.getLoginAccess();
 
+                        if (access == LoginAccess.BLOCK) {
+                                return new ApiResponse<>(
+                                                false,
+                                                "Your account has been blocked by admin. Please contact support.",
+                                                null);
+                        }
 
-        // ============================================
-        // NORMAL USER LOGIN
-        // ============================================
+                        if (access == null || access == LoginAccess.PENDING) {
+                                return new ApiResponse<>(
+                                                false,
+                                                "Your account is pending approval. Please wait for admin verification.",
+                                                null);
+                        }
+                }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found with email: "
-                                + request.getEmail()
-                        )
-                );
+                // GENERATE JWT
+                String token = jwtUtil.generateToken(
+                                user.getEmail(),
+                                user.getRole().name());
 
+                // RETURN ONLY TOKEN, NAME AND ROLE
+                LoginResponse loginResponse = new LoginResponse(
+                                token,
+                                user.getName(),
+                                user.getRole().name());
 
-        // ============================================
-        // PASSWORD CHECK
-        // ============================================
-
-        if (!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword())) {
-
-            throw new ResourceNotFoundException("Invalid password!");
-        }
-
-
-        // ============================================
-        // TECHNICIAN LOGIN ACCESS CHECK
-        // (Only applies to technicians — customers/admin skip this)
-        // ============================================
-
-        if (user.getRole() == Role.TECHNICIAN) {
-
-            // Treat null as PENDING too, in case older records have no value set
-            LoginAccess access = user.getLoginAccess();
-
-            if (access == LoginAccess.BLOCK) {
                 return new ApiResponse<>(
-                        false,
-                        "Your account has been blocked by admin. Please contact support.",
-                        null
-                );
-            }
+                                true,
+                                "Login successful!",
+                                loginResponse);
+        }
 
-            if (access == null || access == LoginAccess.PENDING) {
+        @Override
+        public ApiResponse<?> getCurrentUser(String email) {
+
+                // ADMIN CHECK (admin is not stored in MongoDB)
+                if ("admin@gmail.com".equals(email)) {
+
+                        AuthMeResponse response = new AuthMeResponse(
+                                        "Admin",
+                                        Role.ADMIN.name());
+
+                        return new ApiResponse<>(
+                                        true,
+                                        "User fetched successfully!",
+                                        response);
+                }
+
+                // CUSTOMER / TECHNICIAN CHECK
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+                AuthMeResponse response = new AuthMeResponse(
+                                user.getName(),
+                                user.getRole().name());
+
                 return new ApiResponse<>(
-                        false,
-                        "Your account is pending approval. Please wait for admin verification.",
-                        null
-                );
-            }
-
-            // access == LoginAccess.ALLOW → fall through to normal login below
+                                true,
+                                "User fetched successfully!",
+                                response);
         }
 
+        @Override
+        public ApiResponse<?> sendForgotPasswordOtp(ForgotPasswordRequest request) {
+                // Verify user exists (don't reveal if they don't — security best practice)
+                userRepository.findByEmail(request.getEmail())
+                                .orElseThrow(() -> new ResourceNotFoundException("No account found with that email."));
 
-        // ============================================
-        // JWT WITH ROLE
-        // ============================================
+                // Generate 6-digit OTP
+                String otp = String.format("%06d", new Random().nextInt(999999));
 
-        String token = jwtUtil.generateToken(
-                user.getEmail(),
-                user.getRole().name()
-        );
+                otpStore.save(request.getEmail(), otp);
+                emailService.sendOtp(request.getEmail(), otp);
 
-
-        // ============================================
-        // RESPONSE
-        // ============================================
-
-        UserResponse userResponse =
-                new UserResponse(user);
-
-        AuthResponse authResponse =
-                new AuthResponse(token, userResponse);
-
-        return new ApiResponse<>(
-                true,
-                "Login successful!",
-                authResponse
-        );
-    }
-
-    @Override
-    public ApiResponse<?> getCurrentUser(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return new ApiResponse<>(true, "User fetched successfully!", new UserResponse(user));
-    }
-    
-    @Override
-    public ApiResponse<?> sendForgotPasswordOtp(ForgotPasswordRequest request) {
-        // Verify user exists (don't reveal if they don't — security best practice)
-        userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("No account found with that email."));
-     
-        // Generate 6-digit OTP
-        String otp = String.format("%06d", new Random().nextInt(999999));
-     
-        otpStore.save(request.getEmail(), otp);
-        emailService.sendOtp(request.getEmail(), otp);
-     
-        return new ApiResponse<>(true, "OTP sent to your registered email.", null);
-    }
-     
-    @Override
-    public ApiResponse<?> resetPassword(ResetPasswordRequest request) {
-        if (!otpStore.verify(request.getEmail(), request.getOtp())) {
-            throw new ResourceNotFoundException("Invalid or expired OTP.");
+                return new ApiResponse<>(true, "OTP sent to your registered email.", null);
         }
-     
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
-     
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-     
-        otpStore.remove(request.getEmail()); // Invalidate OTP after use
-     
-        return new ApiResponse<>(true, "Password reset successfully! Please log in.", null);
-    }
+
+        @Override
+        public ApiResponse<?> resetPassword(ResetPasswordRequest request) {
+                if (!otpStore.verify(request.getEmail(), request.getOtp())) {
+                        throw new ResourceNotFoundException("Invalid or expired OTP.");
+                }
+
+                User user = userRepository.findByEmail(request.getEmail())
+                                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+                user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+                userRepository.save(user);
+
+                otpStore.remove(request.getEmail()); // Invalidate OTP after use
+
+                return new ApiResponse<>(true, "Password reset successfully! Please log in.", null);
+        }
 }
