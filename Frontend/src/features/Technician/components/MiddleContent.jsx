@@ -7,6 +7,7 @@ import PageLoader from '../../../components/common/PageLoader';
 import ErrorPage from '../../../components/common/ErrorPage';
 import MiddleContentSkeleton from '../Skelitons/MiddleContentSkeleton';
 import NoActiveJob from './NoActiveJob';
+import StatCard from './StatCard';
 
 const MiddleContent = () => {
   const {
@@ -51,34 +52,11 @@ const MiddleContent = () => {
       {/* ═══════════ STATS GRID ═══════════ */}
       <section className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
         {stats.map((stat, i) => (
-          <div
+          <StatCard
             key={i}
-            className="bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-[0_15px_40px_-10px_rgba(0,74,198,0.12)] hover:-translate-y-0.5 transition-all duration-300 group"
-          >
-            <div className="flex justify-between items-start mb-3 sm:mb-4">
-              <div
-                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-300 ${stat.color === 'blue'
-                  ? 'bg-blue-50 text-blue-600'
-                  : stat.color === 'emerald'
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-amber-50 text-amber-600'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-[20px] sm:text-[24px]">
-                  {stat.icon}
-                </span>
-              </div>
-              <span className="hidden sm:inline text-[10px] font-bold tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-full">
-                {stat.sub}
-              </span>
-            </div>
-            <h3 className="text-[11px] sm:text-sm text-slate-400 font-medium leading-tight">
-              {stat.label}
-            </h3>
-            <p className="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1 tracking-tight leading-none">
-              {stat.value}
-            </p>
-          </div>
+            stat={stat}
+            wide={stats.length % 2 === 1 && i === stats.length - 1}
+          />
         ))}
       </section>
 
