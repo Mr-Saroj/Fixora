@@ -17,8 +17,11 @@ export const getBackdropClasses = (isOpen) => {
   }`;
 };
 
+// ✅ FIX: `h-screen` (100vh) is taller than the visible area on mobile browsers
+//    (address bar), which pushed Logout off-screen.
+//    `inset-y-0` pins the sidebar to the top AND bottom of the visible viewport.
 export const getSidebarContainerClasses = (isOpen) => {
-  return `fixed left-0 top-0 h-screen bg-white border-r border-slate-100 flex flex-col z-50 transition-all duration-300 ease-in-out shadow-[4px_0_30px_-10px_rgba(0,0,0,0.05)] ${
+  return `fixed inset-y-0 left-0 bg-white border-r border-slate-100 flex flex-col z-50 transition-all duration-300 ease-in-out shadow-[4px_0_30px_-10px_rgba(0,0,0,0.05)] ${
     isOpen
       ? 'translate-x-0 w-72'
       : '-translate-x-full lg:translate-x-0 lg:w-0 lg:overflow-hidden lg:border-r-0 lg:shadow-none'

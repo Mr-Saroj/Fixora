@@ -1,7 +1,5 @@
-
 import React, { useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-
 
 import { removeToken } from '../../utils/authCookie';
 
@@ -74,7 +72,7 @@ const Sidebar = ({
         <div className="w-72 min-w-[18rem] h-full flex flex-col">
 
           {/* Logo + Close Button */}
-          <div className="p-6 pb-8 border-b border-slate-100 flex items-start justify-between">
+          <div className="shrink-0 p-6 pb-8 border-b border-slate-100 flex items-start justify-between">
 
             <NavLink
               to="/"
@@ -145,12 +143,12 @@ const Sidebar = ({
           </div>
 
           {/* Dashboard Label */}
-          <p className="text-xs text-slate-400 font-medium tracking-wide -mt-6 mb-0 px-6">
+          <p className="shrink-0 text-xs text-slate-400 font-medium tracking-wide -mt-6 mb-0 px-6">
             {dashboardLabel}
           </p>
 
-          {/* Main Navigation */}
-          <nav className="flex-grow p-4 space-y-1 mt-2">
+          {/* Main Navigation — scrolls when the screen is short */}
+          <nav className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1 mt-2">
 
             {navLinks.map((link) => (
               <NavLink
@@ -196,8 +194,8 @@ const Sidebar = ({
 
           </nav>
 
-          {/* Bottom Navigation */}
-          <div className="p-4 pt-4 mt-auto border-t border-slate-100 space-y-1">
+          {/* Bottom Navigation — always visible, clear of the phone's bottom edge */}
+          <div className="shrink-0 p-4 pt-4 mt-auto border-t border-slate-100 space-y-1 pb-[max(1rem,env(safe-area-inset-bottom))]">
 
             {bottomLinks.map((link) => (
               <a
