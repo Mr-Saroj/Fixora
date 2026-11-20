@@ -7,13 +7,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.saroj.fixora.dto.AuthMeResponse;
-import com.saroj.fixora.dto.AuthResponse;
 import com.saroj.fixora.dto.ForgotPasswordRequest;
 import com.saroj.fixora.dto.LoginRequest;
 import com.saroj.fixora.dto.LoginResponse;
 import com.saroj.fixora.dto.RegisterRequest;
 import com.saroj.fixora.dto.ResetPasswordRequest;
-import com.saroj.fixora.dto.UserResponse;
 import com.saroj.fixora.exception.DuplicateResourceException;
 import com.saroj.fixora.exception.ResourceNotFoundException;
 import com.saroj.fixora.model.User;
