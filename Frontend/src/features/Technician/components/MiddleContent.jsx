@@ -6,6 +6,7 @@ import GradientButton from '../../../components/ui/GradientButton';
 import PageLoader from '../../../components/common/PageLoader';
 import ErrorPage from '../../../components/common/ErrorPage';
 import MiddleContentSkeleton from '../Skelitons/MiddleContentSkeleton';
+import NoActiveJob from './NoActiveJob';
 
 const MiddleContent = () => {
   const {
@@ -25,7 +26,7 @@ const MiddleContent = () => {
 
   // Full page loading
   if (jobsLoading) {
-    return <MiddleContentSkeleton/>;
+    return <MiddleContentSkeleton />;
   }
 
   // Full page error
@@ -57,10 +58,10 @@ const MiddleContent = () => {
             <div className="flex justify-between items-start mb-3 sm:mb-4">
               <div
                 className={`p-2 sm:p-3 rounded-lg sm:rounded-xl group-hover:scale-110 transition-transform duration-300 ${stat.color === 'blue'
-                    ? 'bg-blue-50 text-blue-600'
-                    : stat.color === 'emerald'
-                      ? 'bg-emerald-50 text-emerald-600'
-                      : 'bg-amber-50 text-amber-600'
+                  ? 'bg-blue-50 text-blue-600'
+                  : stat.color === 'emerald'
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : 'bg-amber-50 text-amber-600'
                   }`}
               >
                 <span className="material-symbols-outlined text-[20px] sm:text-[24px]">
@@ -118,15 +119,7 @@ const MiddleContent = () => {
               </span>
             </div>
           ) : !currentJob ? (
-            <div className="text-center py-8 sm:py-10">
-              <span className="material-symbols-outlined text-slate-300 text-[36px] sm:text-[40px]">
-                work_off
-              </span>
-              <p className="text-sm font-semibold text-slate-500 mt-2">No active job right now</p>
-              <p className="text-xs text-slate-400 mt-1">
-                Head to your Requests page to accept a job.
-              </p>
-            </div>
+            <NoActiveJob requestsPath="/technician-dashboard/customer-requests" />
           ) : (
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-50 text-[#004ac6] flex items-center justify-center font-bold text-base sm:text-lg shrink-0">
@@ -221,8 +214,8 @@ const MiddleContent = () => {
                     </div>
                     <span
                       className={`text-[9px] mt-1.5 font-medium leading-tight ${isActive
-                          ? 'text-[#004ac6] font-bold'
-                          : 'text-slate-500'
+                        ? 'text-[#004ac6] font-bold'
+                        : 'text-slate-500'
                         }`}
                     >
                       {step.label}
@@ -272,8 +265,8 @@ const MiddleContent = () => {
                     </div>
                     <span
                       className={`text-xs mt-2 font-medium ${isActive
-                          ? 'text-[#004ac6] font-bold'
-                          : 'text-slate-500'
+                        ? 'text-[#004ac6] font-bold'
+                        : 'text-slate-500'
                         }`}
                     >
                       {step.label}
@@ -286,7 +279,7 @@ const MiddleContent = () => {
         </div>
       )}
 
-     
+
 
       {/* Bottom spacer */}
       <div className="h-4 sm:h-8" />
