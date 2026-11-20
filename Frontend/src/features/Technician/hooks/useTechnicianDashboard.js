@@ -1,5 +1,11 @@
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getMyJobs, updateJobStatus, getSubscriptionStatus } from '../services/technicianService';
+
+import {
+  getMyJobs,
+  updateJobStatus,
+  getSubscriptionStatus
+} from '../services/technicianService';
 
 export const STEPS = [
   { status: 'ACCEPTED', icon: 'assignment_turned_in', label: 'Accepted' },
@@ -8,14 +14,24 @@ export const STEPS = [
 ];
 
 export const getCategoryIcon = (category) => {
-  const map = { PLUMBING: 'plumbing', ELECTRICAL: 'bolt', HVAC: 'ac_unit', CARPENTER: 'carpenter' };
+  const map = {
+    PLUMBING: 'plumbing',
+    ELECTRICAL: 'bolt',
+    HVAC: 'ac_unit',
+    CARPENTER: 'carpenter'
+  };
+
   return map[category?.toUpperCase()] || 'build';
 };
 
 export const formatDate = (iso) => {
   if (!iso) return '—';
+
   return new Date(iso).toLocaleDateString(undefined, {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 };
 
@@ -25,30 +41,49 @@ export const useTechnicianDashboard = () => {
   const [advancing, setAdvancing] = useState(false);
   const [error, setError] = useState(null);
 
-  // ── Subscription state ──────────────────────────────────
-  const [subscription, setSubscription] = useState(null); // { status, daysRemaining, subscriptionEndDate }
+  // Subscription
+  const [subscription, setSubscription] = useState(null);
   const [subLoading, setSubLoading] = useState(true);
 
-  // ── Fetch Jobs ──────────────────────────────────────────
+  // Fetch Jobs
   const fetchJobs = useCallback(async () => {
     setJobsLoading(true);
+    setError(null);
+
     try {
-      const res = await getMyJobs();
-      const body = res.data;
-      setJobs(body.success && Array.isArray(body.data) ? body.data : []);
+      const response = await getMyJobs(null, 10);
+      const body = response.data;
+
+      // Same paginated response structure as getMatchingRequests()
+      const data = body?.data;
+
+      const requests = Array.isArray(data)
+        ? data
+        : data?.requests;
+
+      setJobs(
+        body?.success && Array.isArray(requests)
+          ? requests
+          : []
+      );
+
     } catch (err) {
-      setError(err?.response?.data?.message || 'Could not load your jobs.');
+      setError(
+        err?.response?.data?.message ||
+        'Could not load your jobs.'
+      );
     } finally {
       setJobsLoading(false);
     }
   }, []);
 
-  // ── Fetch Subscription ──────────────────────────────────
+  // Fetch Subscription
   const fetchSubscription = useCallback(async () => {
     setSubLoading(true);
+
     try {
-      const res = await getSubscriptionStatus();
-      setSubscription(res.data.data); // { status, daysRemaining, subscriptionEndDate }
+      const response = await getSubscriptionStatus();
+      setSubscription(response.data.data);
     } catch (err) {
       setSubscription(null);
     } finally {
@@ -61,74 +96,128 @@ export const useTechnicianDashboard = () => {
     fetchSubscription();
   }, [fetchJobs, fetchSubscription]);
 
-  // ── Derived Data ────────────────────────────────────────
-  const activeJobs = useMemo(() =>
-    jobs.filter((j) => j.status === 'ACCEPTED' || j.status === 'IN_PROGRESS'),
-  [jobs]);
+  // Active Jobs
+  const activeJobs = useMemo(
+    () =>
+      jobs.filter(
+        (job) =>
+          job.status === 'ACCEPTED' ||
+          job.status === 'IN_PROGRESS'
+      ),
+    [jobs]
+  );
 
-  const completedJobs = useMemo(() =>
-    jobs.filter((j) => j.status === 'COMPLETED'),
-  [jobs]);
+  // Completed Jobs
+  const completedJobs = useMemo(
+    () =>
+      jobs.filter((job) => job.status === 'COMPLETED'),
+    [jobs]
+  );
 
+  // Current Active Job
   const currentJob = useMemo(() => {
     return [...activeJobs].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    )[0];
+      (a, b) =>
+        new Date(b.createdAt) - new Date(a.createdAt)
+    )[0] || null;
   }, [activeJobs]);
 
+  // Current Step
   const currentStepIdx = currentJob
-    ? STEPS.findIndex((s) => s.status === currentJob.status)
+    ? STEPS.findIndex(
+        (step) => step.status === currentJob.status
+      )
     : -1;
 
-  const stats = useMemo(() => [
-    {
-      icon: 'engineering',
-      label: 'Active Jobs',
-      value: String(activeJobs.length).padStart(2, '0'),
-      sub: `${activeJobs.filter(j => j.status === 'IN_PROGRESS').length} IN PROGRESS`,
-      color: 'blue'
-    },
-    {
-      icon: 'verified',
-      label: 'Completed Jobs',
-      value: String(completedJobs.length).padStart(2, '0'),
-      sub: 'ALL TIME',
-      color: 'emerald'
-    },
-    {
-      icon: 'star',
-      label: 'My Tech Rating',
-      value: '4.95/5.0',
-      sub: 'TOP RATED PRO',
-      color: 'amber'
-    },
-  ], [activeJobs, completedJobs]);
+  // Dashboard Stats
+  const stats = useMemo(
+    () => [
+      {
+        icon: 'engineering',
+        label: 'Active Jobs',
+        value: String(activeJobs.length).padStart(2, '0'),
+        sub: `${activeJobs.filter(
+          (job) => job.status === 'IN_PROGRESS'
+        ).length} IN PROGRESS`,
+        color: 'blue'
+      },
+      {
+        icon: 'verified',
+        label: 'Completed Jobs',
+        value: String(completedJobs.length).padStart(2, '0'),
+        sub: 'ALL TIME',
+        color: 'emerald'
+      },
+      {
+        icon: 'star',
+        label: 'My Tech Rating',
+        value: '4.95/5.0',
+        sub: 'TOP RATED PRO',
+        color: 'amber'
+      }
+    ],
+    [activeJobs, completedJobs]
+  );
 
-  // ── Actions ─────────────────────────────────────────────
+  // Advance Current Job
   const advanceCurrentJob = async () => {
-    if (!currentJob) return;
-    const stepIdx = STEPS.findIndex((s) => s.status === currentJob.status);
-    if (stepIdx === -1 || stepIdx >= STEPS.length - 1) return;
+    if (!currentJob || advancing) return;
+
+    const stepIdx = STEPS.findIndex(
+      (step) => step.status === currentJob.status
+    );
+
+    if (stepIdx === -1 || stepIdx >= STEPS.length - 1) {
+      return;
+    }
+
     const nextStatus = STEPS[stepIdx + 1].status;
 
     setAdvancing(true);
+
     try {
-      const res = await updateJobStatus(currentJob.id, nextStatus);
-      const body = res.data;
-      if (!body.success) { alert(body.message || 'Could not update status'); return; }
-      setJobs((prev) => prev.map((j) => (j.id === currentJob.id ? { ...j, status: nextStatus } : j)));
+      const response = await updateJobStatus(
+        currentJob.id,
+        nextStatus
+      );
+
+      const body = response.data;
+
+      if (!body.success) {
+        alert(body.message || 'Could not update status');
+        return;
+      }
+
+      setJobs((prev) =>
+        prev.map((job) =>
+          job.id === currentJob.id
+            ? { ...job, status: nextStatus }
+            : job
+        )
+      );
+
     } catch (err) {
-      alert(err?.response?.data?.message || 'Could not update status');
+      alert(
+        err?.response?.data?.message ||
+        'Could not update status'
+      );
     } finally {
       setAdvancing(false);
     }
   };
 
   return {
-    jobsLoading, error, advancing,
-    fetchJobs, advanceCurrentJob,
-    currentJob, currentStepIdx, stats, completedJobs,
-    subscription, subLoading, // ✅ new
-    fetchSubscription,
+    jobsLoading,
+    error,
+    fetchJobs,
+    advancing,
+    advanceCurrentJob,
+    currentJob,
+    currentStepIdx,
+    stats,
+    completedJobs,
+    subscription,
+    subLoading,
+    fetchSubscription
   };
 };

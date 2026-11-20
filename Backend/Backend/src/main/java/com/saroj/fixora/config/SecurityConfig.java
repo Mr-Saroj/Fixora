@@ -36,111 +36,96 @@ public class SecurityConfig {
 
         http
 
-            // ------------------------------------------------
-            // CSRF
-            // ------------------------------------------------
-            // Disabled because this is a stateless JWT API
-            .csrf(csrf -> csrf.disable())
+                // ------------------------------------------------
+                // CSRF
+                // ------------------------------------------------
+                // Disabled because this is a stateless JWT API
+                .csrf(csrf -> csrf.disable())
 
-            // ------------------------------------------------
-            // CORS
-            // ------------------------------------------------
-            .cors(cors ->
-                cors.configurationSource(corsConfigurationSource)
-            )
+                // ------------------------------------------------
+                // CORS
+                // ------------------------------------------------
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
-            // ------------------------------------------------
-            // SESSION MANAGEMENT
-            // ------------------------------------------------
-            // JWT authentication does not use server sessions
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(
-                    SessionCreationPolicy.STATELESS
-                )
-            )
+                // ------------------------------------------------
+                // SESSION MANAGEMENT
+                // ------------------------------------------------
+                // JWT authentication does not use server sessions
+                .sessionManagement(session -> session.sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS))
 
-            // ------------------------------------------------
-            // AUTHORIZATION
-            // ------------------------------------------------
-            .authorizeHttpRequests(auth -> auth
+                // ------------------------------------------------
+                // AUTHORIZATION
+                // ------------------------------------------------
+                .authorizeHttpRequests(auth -> auth
 
-                // ============================================
-                // PUBLIC ROUTES
-                // ============================================
+                        // ============================================
+                        // PUBLIC ROUTES
+                        // ============================================
 
-                .requestMatchers(
-                    "/api/auth/register",
-                    "/api/auth/login",
-                    "/api/auth/forgot-password",
-                    "/api/auth/reset-password",
+                        .requestMatchers(
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
 
-                    // Cloudinary signature
-                    "/api/cloudinary/signature",
+                                // Cloudinary signature
+                                "/api/cloudinary/signature",
 
-                    // WebSocket endpoints
-                    "/ws/**",
-                    "/topic/**",
-                    "/app/**"
-                ).permitAll()
+                                // WebSocket endpoints
+                                "/ws/**",
+                                "/topic/**",
+                                "/app/**")
+                        .permitAll()
 
+                        // ============================================
+                        // ADMIN ROUTES
+                        // ============================================
 
-                // ============================================
-                // ADMIN ROUTES
-                // ============================================
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
 
-                .requestMatchers("/api/admin/**")
-                .hasRole("ADMIN")
+                        // ============================================
+                        // TECHNICIAN ROUTES
+                        // ============================================
 
+                        .requestMatchers("/api/technician/**")
+                        .hasRole("TECHNICIAN")
 
-                // ============================================
-                // TECHNICIAN ROUTES
-                // ============================================
+                        // ============================================
+                        // CUSTOMER ROUTES
+                        // ============================================
 
-                .requestMatchers("/api/technician/**")
-                .hasRole("TECHNICIAN")
+                        .requestMatchers("/api/customer/**")
+                        .hasRole("CUSTOMER")
 
+                        // ============================================
+                        // ALL OTHER ROUTES
+                        // ============================================
 
-                // ============================================
-                // CUSTOMER ROUTES
-                // ============================================
+                        // Any route not explicitly defined above
+                        // requires a valid JWT
+                        .anyRequest()
+                        .authenticated())
 
-                .requestMatchers("/api/customer/**")
-                .hasRole("CUSTOMER")
+                // ------------------------------------------------
+                // DISABLE BASIC AUTHENTICATION
+                // ------------------------------------------------
+                .httpBasic(basic -> basic.disable())
 
+                // ------------------------------------------------
+                // DISABLE FORM LOGIN
+                // ------------------------------------------------
+                .formLogin(form -> form.disable())
 
-                // ============================================
-                // ALL OTHER ROUTES
-                // ============================================
-
-                // Any route not explicitly defined above
-                // requires a valid JWT
-                .anyRequest()
-                .authenticated()
-            )
-
-            // ------------------------------------------------
-            // DISABLE BASIC AUTHENTICATION
-            // ------------------------------------------------
-            .httpBasic(basic ->
-                basic.disable()
-            )
-
-            // ------------------------------------------------
-            // DISABLE FORM LOGIN
-            // ------------------------------------------------
-            .formLogin(form ->
-                form.disable()
-            )
-
-            // ------------------------------------------------
-            // JWT FILTER
-            // ------------------------------------------------
-            // Run JWT authentication before Spring's
-            // UsernamePasswordAuthenticationFilter
-            .addFilterBefore(
-                jwtAuthFilter,
-                UsernamePasswordAuthenticationFilter.class
-            );
+                // ------------------------------------------------
+                // JWT FILTER
+                // ------------------------------------------------
+                // Run JWT authentication before Spring's
+                // UsernamePasswordAuthenticationFilter
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

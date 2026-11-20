@@ -78,64 +78,48 @@ export const useAuth = () => {
   };
 
 
-  // ================= REGISTER =================
+ // ================= REGISTER =================
 
-  const register = async (userData) => {
 
-    setIsLoading(true);
+const register = async (userData) => {
 
-    try {
+  setIsLoading(true);
 
-      let profilePhotoUrl = null;
-      let govtIdPhotoUrl = null;
+  try {
 
-      if (userData.profilePhotoFile) {
-        profilePhotoUrl = await uploadPhotoToCloudinary(
-          userData.profilePhotoFile
-        );
-      }
+    const payload = {
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      password: userData.password,
+      role: userData.role
+    };
 
-      if (userData.govtIdPhotoFile) {
-        govtIdPhotoUrl = await uploadPhotoToCloudinary(
-          userData.govtIdPhotoFile
-        );
-      }
+    const response = await registerUser(payload);
 
-      const {
-        profilePhotoFile,
-        govtIdPhotoFile,
-        ...rest
-      } = userData;
+    const data = response.data;
 
-      const payload = {
-        ...rest,
-        profilePhotoUrl,
-        govtIdPhotoUrl
-      };
-
-      const response = await registerUser(payload);
-      const data = response.data;
-
-      if (data.success) {
-        alert(data.message);
-        navigate("/login");
-      } else {
-        alert(data.message || "Registration failed.");
-      }
-
-    } catch (error) {
-
-      const errorMessage =
-        error.response?.data?.message ||
-        "Network error. Is Spring Boot running?";
-
-      alert(errorMessage);
-
-    } finally {
-      setIsLoading(false);
+    if (data.success) {
+      alert(data.message || "Registration successful!");
+      navigate("/login");
+    } else {
+      alert(data.message || "Registration failed.");
     }
-  };
 
+  } catch (error) {
+
+    console.error("Registration error:", error);
+
+    const errorMessage =
+      error.response?.data?.message ||
+      "Network error. Is Spring Boot running?";
+
+    alert(errorMessage);
+
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // ================= RESTORE LOGIN =================
 

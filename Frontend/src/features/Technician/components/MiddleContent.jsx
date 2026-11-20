@@ -286,74 +286,7 @@ const MiddleContent = () => {
         </div>
       )}
 
-      {/* ═══════════ COMPLETED JOBS ═══════════ */}
-      <section>
-        <div className="flex justify-between items-center mb-3 sm:mb-4">
-          <h2 className="font-bold text-slate-800 text-sm sm:text-lg">
-            Recently Completed
-          </h2>
-          <a
-            href="#/"
-            className="text-xs sm:text-sm font-semibold text-[#004ac6] hover:underline"
-          >
-            View All
-          </a>
-        </div>
-
-        {completedJobs.length === 0 ? (
-          <div className="text-center py-8 sm:py-10 bg-white rounded-xl sm:rounded-2xl border border-slate-100">
-            <span className="material-symbols-outlined text-slate-300 text-[36px] sm:text-[40px]">
-              inbox
-            </span>
-            <p className="text-sm font-semibold text-slate-500 mt-2">
-              No completed jobs yet
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2 sm:space-y-3">
-            {completedJobs
-              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-              .slice(0, 5)
-              .map((job) => (
-                <div
-                  key={job.id}
-                  className="bg-white px-4 py-3 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
-                >
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="w-9 h-9 sm:w-12 sm:h-12 bg-slate-50 rounded-lg sm:rounded-xl flex items-center justify-center text-slate-400 border border-slate-100 shrink-0">
-                      <span className="material-symbols-outlined text-[18px] sm:text-[22px]">
-                        {getCategoryIcon(job.category)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-[13px] sm:text-sm text-slate-800 line-clamp-1">
-                        {job.description}
-                      </h4>
-                      <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">
-                        {formatDate(job.createdAt)} • {job.fullName}
-                      </p>
-                    </div>
-                    {job.rating ? (
-                      <span className="shrink-0 text-[10px] sm:text-xs font-bold text-amber-600 bg-amber-50 px-2 sm:px-2.5 py-1 rounded-lg border border-amber-100 flex items-center gap-0.5">
-                        <span
-                          className="material-symbols-outlined text-[13px] sm:text-[14px]"
-                          style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                          star
-                        </span>
-                        {job.rating}.0
-                      </span>
-                    ) : (
-                      <span className="shrink-0 text-[10px] sm:text-xs font-medium text-slate-400 bg-slate-50 px-2 sm:px-2.5 py-1 rounded-lg border border-slate-100">
-                        No rating
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
-      </section>
+     
 
       {/* Bottom spacer */}
       <div className="h-4 sm:h-8" />

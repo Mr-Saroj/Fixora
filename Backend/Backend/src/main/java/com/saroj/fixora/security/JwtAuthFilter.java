@@ -1,7 +1,9 @@
+
 package com.saroj.fixora.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -29,33 +31,49 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
+        String token = null;
+
+        // 1. First check Authorization header
         String authHeader = request.getHeader("Authorization");
 
-        System.out.println(">>> REQUEST: " + request.getRequestURI());
-        System.out.println(">>> AUTH HEADER: " + authHeader);
-
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
 
-            String token = authHeader.substring(7);
+        // 2. If header is missing, check JWT cookie
+        if (token == null && request.getCookies() != null) {
 
-            if (jwtUtil.isTokenValid(token)) {
+            for (Cookie cookie : request.getCookies()) {
 
-                String email = jwtUtil.extractEmail(token);
-                String role = jwtUtil.extractRole(token);
-
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                email,
-                                null,
-                                Collections.singletonList(
-                                        new SimpleGrantedAuthority("ROLE_" + role)
-                                )
-                        );
-
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authToken);
+                if ("token".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
             }
+        }
+
+        System.out.println(">>> REQUEST: " + request.getRequestURI());
+        System.out.println(">>> TOKEN FOUND: " + (token != null));
+
+        // 3. Validate JWT
+        if (token != null &&
+                jwtUtil.isTokenValid(token) &&
+                SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            String email = jwtUtil.extractEmail(token);
+            String role = jwtUtil.extractRole(token);
+
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            Collections.singletonList(
+                                    new SimpleGrantedAuthority("ROLE_" + role)
+                            )
+                    );
+
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authToken);
         }
 
         filterChain.doFilter(request, response);

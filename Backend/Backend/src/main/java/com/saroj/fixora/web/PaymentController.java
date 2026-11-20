@@ -4,7 +4,9 @@ import com.saroj.fixora.dto.CreateOrderRequest;
 import com.saroj.fixora.dto.PaymentVerifyRequest;
 import com.saroj.fixora.exception.ResourceNotFoundException;
 import com.saroj.fixora.model.User;
+import com.saroj.fixora.model.TechnicianProfile;
 import com.saroj.fixora.repository.UserRepository;
+import com.saroj.fixora.repository.TechnicianProfileRepository;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.service.PaymentService;
 
@@ -24,14 +26,18 @@ public class PaymentController {
 
     @Autowired
     private PaymentService paymentService;
-    
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private TechnicianProfileRepository technicianProfileRepository;
 
     @PostMapping("/create-order")
     public ResponseEntity<ApiResponse<?>> createOrder(
             Authentication authentication,
             @RequestBody CreateOrderRequest request) {
+
         return ResponseEntity.ok(
                 paymentService.createOrder(authentication.getName(), request));
     }
@@ -40,37 +46,57 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<?>> verifyPayment(
             Authentication authentication,
             @RequestBody PaymentVerifyRequest request) {
+
         return ResponseEntity.ok(
                 paymentService.verifyPayment(authentication.getName(), request));
     }
+
     @GetMapping("/subscription-status")
     public ResponseEntity<ApiResponse<?>> getSubscriptionStatus(
             Authentication authentication) {
+
         String email = authentication.getName();
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        TechnicianProfile profile = technicianProfileRepository
+                .findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Technician profile not found"));
+
         Map<String, Object> data = new HashMap<>();
-        LocalDate endDate = user.getSubscriptionEndDate();
+
+        LocalDate endDate = profile.getSubscriptionEndDate();
 
         if (endDate == null) {
-            // Never subscribed
+
             data.put("status", "NOT_SUBSCRIBED");
             data.put("subscriptionEndDate", null);
             data.put("daysRemaining", 0);
+
         } else if (LocalDate.now().isAfter(endDate)) {
-            // Subscribed before but expired
+
             data.put("status", "EXPIRED");
             data.put("subscriptionEndDate", endDate.toString());
             data.put("daysRemaining", 0);
+
         } else {
-            // Active
-            long days = ChronoUnit.DAYS.between(LocalDate.now(), endDate);
+
+            long days = ChronoUnit.DAYS.between(
+                    LocalDate.now(), endDate);
+
             data.put("status", "ACTIVE");
             data.put("subscriptionEndDate", endDate.toString());
             data.put("daysRemaining", days);
         }
 
-        return ResponseEntity.ok(new ApiResponse<>(true, "Subscription status fetched", data));
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Subscription status fetched",
+                        data
+                )
+        );
     }
 }

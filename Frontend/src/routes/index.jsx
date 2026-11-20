@@ -4,6 +4,7 @@ import { createBrowserRouter } from "react-router-dom";
 
 import PageLoader from "../components/common/PageLoader";
 import ProtectedRoute from "../components/common/ProtectedRoute";
+import TechnicianProfile from "../features/Technician/pages/TechnicianProfile";
 
 // --- Lazy Page Imports ---
 
@@ -210,6 +211,10 @@ export const router = createBrowserRouter([
           {
             path: "notifications",
             element: withSuspense(<Notifications />),
+          },
+          {
+            path: "profile",
+            element: withSuspense(<TechnicianProfile />),
           },
         ],
       },

@@ -8,9 +8,11 @@ import com.saroj.fixora.dto.UpdateStatusRequest;
 import com.saroj.fixora.exception.ResourceNotFoundException;
 import com.saroj.fixora.model.ServiceRequest;
 import com.saroj.fixora.model.User;
+import com.saroj.fixora.model.enums.LoginAccess;
 import com.saroj.fixora.model.enums.RequestStatus;
 import com.saroj.fixora.model.enums.TechnicianType;
 import com.saroj.fixora.repository.ServiceRequestRepository;
+import com.saroj.fixora.repository.TechnicianProfileRepository;
 import com.saroj.fixora.repository.UserRepository;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.service.ServiceRequestService;
@@ -23,6 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import com.saroj.fixora.model.TechnicianProfile;
+import com.saroj.fixora.model.enums.Role;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -44,6 +48,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private TechnicianProfileRepository technicianProfileRepository;
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -102,41 +109,53 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     // TECHNICIAN SEES AVAILABLE REQUESTS
     // ─────────────────────────────────────────────────────────────────────
     @Override
-    public ApiResponse<?> getRequestsForTechnician(String technicianEmail, String cursor, int size) {
+    public ApiResponse<?> getRequestsForTechnician(
+            String technicianEmail, String cursor, int size) {
+
         User technician = userRepository.findByEmail(technicianEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
-        if (technician.getTechnicianType() == null) {
-            throw new ResourceNotFoundException("This user has no technician type set");
+        TechnicianProfile profile = technicianProfileRepository
+                .findByUserId(technician.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Technician profile not found"));
+
+        if (profile.getTechnicianType() == null) {
+            throw new ResourceNotFoundException("Technician type not configured");
         }
 
         List<ServiceRequest> items;
 
+        Pageable pageable = PageRequest.of(0, size + 1);
+
+        Page<ServiceRequest> page = requestRepository
+                .findByCategoryAndStatusOrderByCreatedAtDesc(
+                        profile.getTechnicianType(),
+                        RequestStatus.PENDING,
+                        pageable);
+
+        items = page.getContent();
+
         if (cursor != null && !cursor.isBlank()) {
             LocalDateTime cursorTime = LocalDateTime.parse(cursor);
-            Pageable pageable = PageRequest.of(0, size + 1);
-            Page<ServiceRequest> page = requestRepository
-                    .findByCategoryAndStatusOrderByCreatedAtDesc(
-                            technician.getTechnicianType(), RequestStatus.PENDING, pageable);
-            items = page.getContent().stream()
+
+            items = items.stream()
                     .filter(r -> r.getCreatedAt().isBefore(cursorTime))
                     .limit(size + 1)
                     .toList();
-        } else {
-            Pageable pageable = PageRequest.of(0, size + 1);
-            Page<ServiceRequest> page = requestRepository
-                    .findByCategoryAndStatusOrderByCreatedAtDesc(
-                            technician.getTechnicianType(), RequestStatus.PENDING, pageable);
-            items = page.getContent();
         }
 
         boolean hasMore = items.size() > size;
-        List<ServiceRequest> pageItems = hasMore ? items.subList(0, size) : items;
+
+        List<ServiceRequest> pageItems = hasMore
+                ? items.subList(0, size)
+                : items;
+
         String nextCursor = (hasMore && !pageItems.isEmpty())
                 ? pageItems.get(pageItems.size() - 1).getCreatedAt().toString()
                 : null;
 
         Map<String, Object> result = new HashMap<>();
+
         result.put("requests", pageItems);
         result.put("nextCursor", nextCursor);
         result.put("hasMore", hasMore);
@@ -153,7 +172,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         String lockKey = "lock::request::" + requestId;
         Boolean lockAcquired;
 
-        // ✅ Redis failure will NOT cause 500
+        // Redis lock
         try {
             lockAcquired = redisTemplate.opsForValue()
                     .setIfAbsent(lockKey, technicianEmail, Duration.ofSeconds(10));
@@ -163,64 +182,132 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         }
 
         if (Boolean.FALSE.equals(lockAcquired)) {
-            return new ApiResponse<>(false,
-                    "This request is being processed by another technician.", null);
+            return new ApiResponse<>(
+                    false,
+                    "This request is being processed by another technician.",
+                    null);
         }
 
         try {
+
             User technician = userRepository.findByEmail(technicianEmail)
                     .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
-            LocalDate today = LocalDate.now(ZoneOffset.UTC);
+            TechnicianProfile profile = technicianProfileRepository
+                    .findByUserId(technician.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Technician profile not found"));
 
-            if (technician.getSubscriptionEndDate() == null) {
-                return new ApiResponse<>(false,
-                        "No active subscription found. Please claim a subscription plan.", null);
+            // Check account approval
+            if (technician.getLoginAccess() != LoginAccess.APPROVED) {
+                return new ApiResponse<>(
+                        false,
+                        "Your account is not approved yet.",
+                        null);
             }
 
-            if (!technician.getSubscriptionEndDate().isAfter(today)) {
-                String expiredOn = technician.getSubscriptionEndDate()
+            // Check profile completion
+            if (!technician.isProfileIsComplete()) {
+                return new ApiResponse<>(
+                        false,
+                        "Please complete your technician profile first.",
+                        null);
+            }
+
+            // Check technician busy status
+            if (profile.isBusy()) {
+                return new ApiResponse<>(
+                        false,
+                        "You already have an active service request. Please complete your current job before accepting another request.",
+                        null);
+            }
+
+            // Check subscription
+            LocalDate today = LocalDate.now(ZoneOffset.UTC);
+
+            if (profile.getSubscriptionEndDate() == null) {
+                return new ApiResponse<>(
+                        false,
+                        "No active subscription found. Please claim a subscription plan.",
+                        null);
+            }
+
+            if (!profile.getSubscriptionEndDate().isAfter(today)) {
+
+                String expiredOn = profile.getSubscriptionEndDate()
                         .format(DateTimeFormatter.ofPattern("MMM dd, yyyy"));
-                return new ApiResponse<>(false,
-                        "Your subscription expired on " + expiredOn +
-                                ". Please renew your plan to accept service requests.", null);
+
+                return new ApiResponse<>(
+                        false,
+                        "Your subscription expired on " + expiredOn
+                                + ". Please renew your plan to accept service requests.",
+                        null);
             }
 
             ServiceRequest request = requestRepository.findById(requestId)
                     .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
 
+            // Check request availability
             if (request.getStatus() != RequestStatus.PENDING) {
-                return new ApiResponse<>(false,
-                        "This request has already been accepted by another technician.", null);
+                return new ApiResponse<>(
+                        false,
+                        "This request has already been accepted by another technician.",
+                        null);
             }
 
+            // Check customer location
             String customerLocation = request.getLocation() != null
-                    ? request.getLocation().toLowerCase() : "";
-            String techCity = technician.getCity() != null ? technician.getCity().toLowerCase() : "";
-            String techDistrict = technician.getDistrict() != null ? technician.getDistrict().toLowerCase() : "";
-            String techState = technician.getState() != null ? technician.getState().toLowerCase() : "";
-            String techPin = technician.getPinCode() != null ? technician.getPinCode().toLowerCase() : "";
+                    ? request.getLocation().toLowerCase()
+                    : "";
 
-            boolean locationMatch = (!techCity.isEmpty() && customerLocation.contains(techCity)) ||
-                    (!techDistrict.isEmpty() && customerLocation.contains(techDistrict)) ||
-                    (!techState.isEmpty() && customerLocation.contains(techState)) ||
-                    (!techPin.isEmpty() && customerLocation.contains(techPin));
+            String techCity = profile.getCity() != null
+                    ? profile.getCity().toLowerCase()
+                    : "";
+
+            String techDistrict = profile.getDistrict() != null
+                    ? profile.getDistrict().toLowerCase()
+                    : "";
+
+            String techState = profile.getState() != null
+                    ? profile.getState().toLowerCase()
+                    : "";
+
+            String techPin = profile.getPinCode() != null
+                    ? profile.getPinCode().toLowerCase()
+                    : "";
+
+            boolean locationMatch = (!techCity.isEmpty() && customerLocation.contains(techCity))
+                    || (!techDistrict.isEmpty() && customerLocation.contains(techDistrict))
+                    || (!techState.isEmpty() && customerLocation.contains(techState))
+                    || (!techPin.isEmpty() && customerLocation.contains(techPin));
 
             if (!locationMatch) {
-                return new ApiResponse<>(false,
-                        "Your service area (" + technician.getCity() + ", " + technician.getDistrict() +
-                                ") does not match the customer's location.", null);
+                return new ApiResponse<>(
+                        false,
+                        "Your service area (" + profile.getCity() + ", "
+                                + profile.getDistrict()
+                                + ") does not match the customer's location.",
+                        null);
             }
 
+            // Accept request
             request.setStatus(RequestStatus.ACCEPTED);
             request.setAssignedTechnicianId(technician.getId());
             request.setAcceptedAt(LocalDateTime.now());
+
             requestRepository.save(request);
 
-            return new ApiResponse<>(true, "Job accepted successfully!", null);
+            // Update technician busy status
+            profile.setBusy(true);
+            technicianProfileRepository.save(profile);
+
+            return new ApiResponse<>(
+                    true,
+                    "Job accepted successfully! Complete your current job before accepting another request.",
+                    null);
 
         } finally {
-            // ✅ Redis failure here also won't cause 500
+
+            // Release Redis lock
             try {
                 redisTemplate.delete(lockKey);
             } catch (Exception e) {
@@ -260,7 +347,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 .sorted((a, b) -> {
                     int pa = STATUS_PRIORITY.getOrDefault(a.getStatus(), 99);
                     int pb = STATUS_PRIORITY.getOrDefault(b.getStatus(), 99);
-                    if (pa != pb) return Integer.compare(pa, pb);
+                    if (pa != pb)
+                        return Integer.compare(pa, pb);
                     return b.getCreatedAt().compareTo(a.getCreatedAt());
                 })
                 .toList();
@@ -269,7 +357,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         if (cursor != null && !cursor.isBlank()) {
             try {
                 startIndex = Integer.parseInt(cursor);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         int endIndex = Math.min(startIndex + size, sorted.size());
@@ -321,7 +410,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 .sorted((a, b) -> {
                     int pa = JOB_PRIORITY.getOrDefault(a.getStatus(), 99);
                     int pb = JOB_PRIORITY.getOrDefault(b.getStatus(), 99);
-                    if (pa != pb) return Integer.compare(pa, pb);
+                    if (pa != pb)
+                        return Integer.compare(pa, pb);
                     return b.getCreatedAt().compareTo(a.getCreatedAt());
                 })
                 .toList();
@@ -330,7 +420,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         if (cursor != null && !cursor.isBlank()) {
             try {
                 startIndex = Integer.parseInt(cursor);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         int endIndex = Math.min(startIndex + size, sorted.size());
@@ -355,10 +446,12 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     // ─────────────────────────────────────────────────────────────────────
     // TECHNICIAN UPDATES JOB STATUS
-    // ─────────────────────────────────────────────────────────────────────
     @Override
-    public ApiResponse<?> updateRequestStatus(String requestId, String technicianEmail,
+    public ApiResponse<?> updateRequestStatus(
+            String requestId,
+            String technicianEmail,
             UpdateStatusRequest dto) {
+
         User technician = userRepository.findByEmail(technicianEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
@@ -393,11 +486,24 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         if (newStatus == RequestStatus.IN_PROGRESS) {
             request.setInProgressAt(LocalDateTime.now());
+
         } else if (newStatus == RequestStatus.COMPLETED) {
             request.setCompletedAt(LocalDateTime.now());
         }
 
         requestRepository.save(request);
+
+        // Release technician when job is completed
+        if (newStatus == RequestStatus.COMPLETED) {
+
+            TechnicianProfile profile = technicianProfileRepository
+                    .findByUserId(technician.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Technician profile not found"));
+
+            profile.setBusy(false);
+            technicianProfileRepository.save(profile);
+        }
 
         return new ApiResponse<>(true, "Job status updated to " + newStatus, null);
     }
@@ -459,19 +565,32 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         return dto;
     }
 
-    private ServiceRequestResponseDTO toResponseDTOWithTechnician(ServiceRequest req) {
+    private ServiceRequestResponseDTO toResponseDTOWithTechnician(
+            ServiceRequest req) {
+
         ServiceRequestResponseDTO dto = toResponseDTO(req);
+
         if (req.getAssignedTechnicianId() != null) {
+
             userRepository.findById(req.getAssignedTechnicianId())
-                    .ifPresent(tech -> dto.setTechnician(new ServiceRequestResponseDTO.TechnicianInfo(
-                            tech.getName(),
-                            tech.getPhone(),
-                            tech.getCity(),
-                            tech.getDistrict(),
-                            tech.getTechnicianType() != null
-                                    ? tech.getTechnicianType().name()
-                                    : null)));
+                    .ifPresent(tech -> {
+
+                        TechnicianProfile profile = technicianProfileRepository
+                                .findByUserId(tech.getId())
+                                .orElse(null);
+
+                        dto.setTechnician(
+                                new ServiceRequestResponseDTO.TechnicianInfo(
+                                        tech.getName(),
+                                        tech.getPhone(),
+                                        profile != null ? profile.getCity() : null,
+                                        profile != null ? profile.getDistrict() : null,
+                                        profile != null && profile.getTechnicianType() != null
+                                                ? profile.getTechnicianType().name()
+                                                : null));
+                    });
         }
+
         return dto;
     }
 }

@@ -1,7 +1,12 @@
 package com.saroj.fixora.web;
 
+import java.net.http.HttpHeaders;
+import java.time.Duration;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,6 +27,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<?>> register(@RequestBody RegisterRequest request) {
@@ -63,6 +71,23 @@ public class AuthController {
     public ResponseEntity<ApiResponse<?>> resetPassword(@RequestBody ResetPasswordRequest request) {
         ApiResponse<?> response = authService.resetPassword(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+
+        ResponseCookie expiredCookie = ResponseCookie
+                .from("token", "")
+                .httpOnly(false)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ZERO)
+                .build();
+
+        return ResponseEntity.noContent()
+                .header("Set-Cookie", expiredCookie.toString())
+                .build();
     }
 
 }

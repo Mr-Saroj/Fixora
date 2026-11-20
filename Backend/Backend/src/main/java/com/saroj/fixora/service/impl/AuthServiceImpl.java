@@ -20,12 +20,14 @@ import com.saroj.fixora.model.User;
 import com.saroj.fixora.model.enums.LoginAccess;
 import com.saroj.fixora.model.enums.Role;
 import com.saroj.fixora.model.enums.TechnicianType;
+import com.saroj.fixora.repository.TechnicianProfileRepository;
 import com.saroj.fixora.repository.UserRepository;
 import com.saroj.fixora.response.ApiResponse;
 import com.saroj.fixora.security.JwtUtil;
 import com.saroj.fixora.security.OtpStore;
 import com.saroj.fixora.service.AuthService;
 import com.saroj.fixora.service.EmailService;
+import com.saroj.fixora.model.TechnicianProfile;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -45,32 +47,72 @@ public class AuthServiceImpl implements AuthService {
         @Autowired
         private JwtUtil jwtUtil;
 
+        @Autowired
+        private TechnicianProfileRepository technicianProfileRepository;
+
         @Override
         public ApiResponse<?> registerUser(RegisterRequest request) {
+
                 if (userRepository.findByEmail(request.getEmail()).isPresent()) {
                         throw new DuplicateResourceException("Email is already registered!");
                 }
 
+                Role role = Role.valueOf(request.getRole().toUpperCase());
+
                 User user = new User();
+
+                // Common user information
                 user.setName(request.getName());
                 user.setEmail(request.getEmail());
                 user.setPhone(request.getPhone());
                 user.setPassword(passwordEncoder.encode(request.getPassword()));
-                user.setRole(Role.valueOf(request.getRole().toUpperCase()));
+                user.setRole(role);
 
-                if (user.getRole() == Role.TECHNICIAN && request.getTechnicianType() != null) {
-                        user.setTechnicianType(TechnicianType.valueOf(request.getTechnicianType().toUpperCase()));
-                        user.setState(request.getState());
-                        user.setDistrict(request.getDistrict());
-                        user.setCity(request.getCity());
-                        user.setPinCode(request.getPinCode());
-                        user.setProfilePhotoUrl(request.getProfilePhotoUrl());
-                        user.setGovtIdPhotoUrl(request.getGovtIdPhotoUrl());
+                if (role == Role.CUSTOMER) {
+
+                        user.setLoginAccess(LoginAccess.APPROVED);
+                        user.setProfileIsComplete(true);
+
+                } else if (role == Role.TECHNICIAN) {
+
                         user.setLoginAccess(LoginAccess.PENDING);
+                        user.setProfileIsComplete(false);
+
+                } else {
+                        throw new IllegalArgumentException("Invalid registration role");
                 }
 
                 User savedUser = userRepository.save(user);
-                return new ApiResponse<>(true, "Registration successful!", savedUser.getId());
+
+                // Create technician profile separately
+                if (role == Role.TECHNICIAN) {
+
+                        TechnicianProfile profile = new TechnicianProfile();
+
+                        profile.setUserId(savedUser.getId());
+
+                        // Initially, save any technician details supplied during registration.
+                        // Remaining details can be completed later.
+
+                        if (request.getTechnicianType() != null) {
+                                profile.setTechnicianType(
+                                                TechnicianType.valueOf(request.getTechnicianType().toUpperCase()));
+                        }
+
+                        profile.setState(request.getState());
+                        profile.setDistrict(request.getDistrict());
+                        profile.setCity(request.getCity());
+                        profile.setPinCode(request.getPinCode());
+                        profile.setProfilePhotoUrl(request.getProfilePhotoUrl());
+                        profile.setGovtIdPhotoUrl(request.getGovtIdPhotoUrl());
+
+                        technicianProfileRepository.save(profile);
+                }
+
+                return new ApiResponse<>(
+                                true,
+                                "Registration successful!",
+                                savedUser.getId());
         }
 
         @Override

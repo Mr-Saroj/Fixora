@@ -1,6 +1,10 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { useCallback } from 'react';
+
+import React, { useCallback } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+
+
+import { removeToken } from '../../utils/authCookie';
+
 import {
   getBackdropClasses,
   getSidebarContainerClasses,
@@ -13,12 +17,49 @@ import {
   isMobileView,
   DESKTOP_BREAKPOINT,
 } from '../../utils/sidebarUtils';
+import API from '../../services/api';
 
-const Sidebar = ({ sidebarOpen, setSidebarOpen, navLinks, bottomLinks, dashboardLabel }) => {
+const Sidebar = ({
+  sidebarOpen,
+  setSidebarOpen,
+  navLinks,
+  bottomLinks,
+  dashboardLabel
+}) => {
 
+  const navigate = useNavigate();
+
+  // Close sidebar on mobile
   const handleMobileClose = useCallback(() => {
-    if (isMobileView(DESKTOP_BREAKPOINT)) setSidebarOpen(false);
+    if (isMobileView(DESKTOP_BREAKPOINT)) {
+      setSidebarOpen(false);
+    }
   }, [setSidebarOpen]);
+
+  // Logout handler
+  const handleLogout = useCallback(async () => {
+    try {
+      // Call backend logout API
+      await API.post('/auth/logout');
+
+    } catch (error) {
+      console.error('Logout API failed:', error);
+
+    } finally {
+      // Remove JWT cookie
+      removeToken();
+
+      // Clear user information
+      localStorage.removeItem('name');
+      localStorage.removeItem('role');
+
+      // Close sidebar
+      setSidebarOpen(false);
+
+      // Redirect to login page
+      navigate('/login', { replace: true });
+    }
+  }, [navigate, setSidebarOpen]);
 
   return (
     <>
@@ -34,22 +75,54 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, navLinks, bottomLinks, dashboard
 
           {/* Logo + Close Button */}
           <div className="p-6 pb-8 border-b border-slate-100 flex items-start justify-between">
-            <NavLink to="/" end className="inline-block" onClick={handleMobileClose}>
-              <svg width="160" height="48" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+
+            <NavLink
+              to="/"
+              end
+              className="inline-block"
+              onClick={handleMobileClose}
+            >
+              <svg
+                width="160"
+                height="48"
+                viewBox="0 0 200 60"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <defs>
-                  <linearGradient id="sidebar-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{ stopColor: '#004ac6', stopOpacity: 1 }} />
-                    <stop offset="100%" style={{ stopColor: '#57dffe', stopOpacity: 1 }} />
+                  <linearGradient
+                    id="sidebar-logo-grad"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop
+                      offset="0%"
+                      style={{ stopColor: '#004ac6', stopOpacity: 1 }}
+                    />
+                    <stop
+                      offset="100%"
+                      style={{ stopColor: '#57dffe', stopOpacity: 1 }}
+                    />
                   </linearGradient>
                 </defs>
+
                 <g transform="translate(0, 10)">
                   <path
                     d="M10 0 C10 0 40 0 40 5 C40 10 20 12 20 15 L20 25 L35 25 C35 25 35 30 30 30 L20 30 L20 45 L10 45 L10 0"
                     fill="url(#sidebar-logo-grad)"
                   />
-                  <circle cx="45" cy="5" r="5" fill="#10B981" />
+
+                  <circle
+                    cx="45"
+                    cy="5"
+                    r="5"
+                    fill="#10B981"
+                  />
+
                   <text
-                    x="65" y="35"
+                    x="65"
+                    y="35"
                     fontFamily="Inter, sans-serif"
                     fontWeight="800"
                     fontSize="32"
@@ -60,7 +133,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, navLinks, bottomLinks, dashboard
                 </g>
               </svg>
             </NavLink>
-            <button onClick={() => setSidebarOpen(false)} className={getCloseButtonClasses()}>
+
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className={getCloseButtonClasses()}
+            >
               <span className="material-symbols-outlined text-[22px] group-hover:rotate-90 transition-transform duration-200">
                 close
               </span>
@@ -74,44 +151,72 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, navLinks, bottomLinks, dashboard
 
           {/* Main Navigation */}
           <nav className="flex-grow p-4 space-y-1 mt-2">
+
             {navLinks.map((link) => (
               <NavLink
                 key={link.label}
                 to={link.to}
                 end={link.end}
                 onClick={handleMobileClose}
-                className={({ isActive }) => getNavLinkClasses(isActive)}
+                className={({ isActive }) =>
+                  getNavLinkClasses(isActive)
+                }
               >
                 {({ isActive }) => (
                   <>
-                    {isActive && <div className={getActiveIndicatorClasses()} />}
-                    <span className={getIconClasses(isActive)}>{link.icon}</span>
-                    <span className="flex-1 text-left">{link.label}</span>
-
-                    {/* ✅ dynamic Redux count badge */}
-                    {link.showBadge && link.badgeCount > 0 && (
-                      <span className={getBadgeClasses()}>{link.badgeCount}</span>
+                    {isActive && (
+                      <div className={getActiveIndicatorClasses()} />
                     )}
 
-                    {/* ✅ static badge text */}
+                    <span className={getIconClasses(isActive)}>
+                      {link.icon}
+                    </span>
+
+                    <span className="flex-1 text-left">
+                      {link.label}
+                    </span>
+
+                    {/* Dynamic Redux count badge */}
+                    {link.showBadge && link.badgeCount > 0 && (
+                      <span className={getBadgeClasses()}>
+                        {link.badgeCount}
+                      </span>
+                    )}
+
+                    {/* Static badge text */}
                     {link.badge && (
-                      <span className={getBadgeClasses()}>{link.badge}</span>
+                      <span className={getBadgeClasses()}>
+                        {link.badge}
+                      </span>
                     )}
                   </>
                 )}
               </NavLink>
             ))}
+
           </nav>
 
           {/* Bottom Navigation */}
           <div className="p-4 pt-4 mt-auto border-t border-slate-100 space-y-1">
+
             {bottomLinks.map((link) => (
               <a
                 key={link.label}
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (link.onClick) link.onClick();
+
+                  // Logout
+                  if (link.label.toLowerCase() === 'logout') {
+                    handleLogout();
+                    return;
+                  }
+
+                  // Other bottom link actions
+                  if (link.onClick) {
+                    link.onClick();
+                  }
+
                   handleMobileClose();
                 }}
                 className={getBottomLinkClasses(link.isDanger)}
@@ -119,9 +224,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, navLinks, bottomLinks, dashboard
                 <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">
                   {link.icon}
                 </span>
+
                 <span>{link.label}</span>
               </a>
             ))}
+
           </div>
 
         </div>
